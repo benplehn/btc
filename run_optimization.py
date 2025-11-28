@@ -281,6 +281,7 @@ def main():
         rainbow_sell_threshold=float(best['rainbow_sell_threshold']),
         max_allocation_pct=int(best['max_allocation_pct']),
         min_allocation_pct=int(best['min_allocation_pct']),
+        min_position_change_pct=float(best['min_position_change_pct']),
         execute_next_day=bool(best['execute_next_day']),
     )
 
@@ -292,14 +293,48 @@ def main():
     backtest_result["df"].to_csv(backtest_file, index=False)
     print(f"💾 Backtest sauvegardé: {backtest_file}")
 
+    # ========================================================================
+    # 9. VISUALISATION GRAPHIQUE
+    # ========================================================================
+    print("\n📊 Génération des graphiques...")
+
+    from src.fngbt.visualize import plot_strategy_results, plot_optimization_results, save_plot, show_plots
+
+    # Graphique de la meilleure stratégie
+    fig_strategy = plot_strategy_results(
+        df=backtest_result["df"],
+        metrics=backtest_result["metrics"],
+        config=best_cfg.to_dict(),
+        title=f"Meilleure Stratégie - Score: {best['score']:.3f}x vs B&H"
+    )
+
+    # Sauvegarde
+    strategy_plot_file = f"outputs/best_strategy_{timestamp}.png"
+    save_plot(fig_strategy, strategy_plot_file)
+
+    # Graphique de comparaison des configs
+    fig_optimization = plot_optimization_results(results_df, top_n=10)
+
+    # Sauvegarde
+    optimization_plot_file = f"outputs/optimization_comparison_{timestamp}.png"
+    save_plot(fig_optimization, optimization_plot_file)
+
     print("\n" + "=" * 80)
     print("✅ OPTIMISATION TERMINÉE!")
     print("=" * 80)
     print(f"\nFichiers générés:")
     print(f"   • {output_file}")
     print(f"   • {backtest_file}")
+    print(f"   • {strategy_plot_file}")
+    print(f"   • {optimization_plot_file}")
+
     print("\n💡 Conseil: Analysez les résultats et vérifiez que les paramètres")
     print("   ont du sens économiquement (pas juste du curve-fitting!)")
+
+    # Affichage des graphiques
+    print("\n📈 Affichage des graphiques...")
+    print("   Fermez les fenêtres pour terminer le programme.")
+    show_plots()
 
 
 if __name__ == "__main__":
