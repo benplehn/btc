@@ -1,65 +1,244 @@
-# BTC FNG -> Bitcoin Rainbow (sizing progressif)
+# 🚀 Bitcoin Strategy Optimizer - FNG + Rainbow Chart
 
-Stratégie long-only contrarienne :
-- FNG choisit le **régime** : en-dessous du buy -> accumulation ; au-dessus du sell -> distribution ; entre les deux = mix (courbure ajustable).
-- Rainbow fixe le **sizing** : plus on est près du ruban bas, plus l'allocation monte ; plus on s'approche du ruban haut, plus on coupe (courbures achat/vente ajustables).
+**Stratégie d'investissement long terme Bitcoin basée sur 2 indicateurs:**
+1. **Fear & Greed Index** (sentiment de marché)
+2. **Rainbow Chart** (position du prix vs régression historique)
 
-Ce que tu as :
-- Backtest rapide CLI : `scripts/run_backtest.py`.
-- Optimisation grille ou Optuna (avec validation temporelle) : `scripts/run_optimize.py`.
-- UI Streamlit interactive : `streamlit run streamlit_app.py`.
+## 📊 Logique de la stratégie
 
-## Installation
-```bash
-pip install -r requirements.txt
+### Principe investisseur long terme
+- **ACHETER** : FNG bas (FEAR) + Prix proche du ruban BAS → Allocation élevée
+- **VENDRE** : FNG haut (GREED) + Prix proche du ruban HAUT → Allocation basse
+
+### Exemple concret
+```
+FNG = 20 (FEAR) + Rainbow Position = 0.2 (prix très bas) → Allocation 100% BTC
+FNG = 80 (GREED) + Rainbow Position = 0.8 (prix très haut) → Allocation 0% BTC
+FNG = 50 (neutre) + Rainbow Position = 0.5 (milieu) → Allocation ~50% BTC
 ```
 
-## Backtest d’une config
+## 🛠️ Installation
+
 ```bash
-python3 scripts/run_backtest.py \
-  --fng-buy 25 --fng-sell 70 --fng-curve 1.2 \
-  --buy-curve 1.4 --sell-curve 2.2 \
-  --max-alloc 100 --trade-cooldown 4 --min-hold-days 7 \
-  --out outputs/backtest.png
+pip install pandas numpy requests optuna matplotlib
+# Note: yfinance peut avoir des problèmes, mais le code fonctionne sans
 ```
-Options : `--weekly`, `--no-fng`, `--no-rainbow`, `--same-day` (sinon J+1).
 
-## Optimisation (Optuna ou grille)
+## 🧪 Test rapide
+
 ```bash
-python3 scripts/run_optimize.py \
-  --search optuna --n-trials 400 \
-  --fng-buy-grid 10:35:5 --fng-sell-grid 55:90:5 --fng-curve-grid 1.0,1.3,1.6 \
-  --buy-curve-grid 1.0,1.4,1.8 --sell-curve-grid 1.5,2.0,2.5 --max-alloc-grid 80,100 \
-  --cv-mode walkforward --cv-folds 4 --cv-warmup-days 365 \
-  --min-trades-per-year 3 \
-  --out-csv outputs/opt_results.csv
+python3 test_strategy.py
 ```
-- Score = ratio d’equity finale vs Buy & Hold (médiane des folds). Filtre trades/an appliqué sur la médiane.
-- Grilles : `a,b,c` ou `start:end:step`. Mettre `none` ou `0` pour un R illimité.
 
-## GUI Streamlit
+Cela teste la stratégie avec des données synthétiques et affiche:
+- ✅ Validation de la logique
+- 📊 Métriques de performance
+- 🔍 Comparaison avec Buy & Hold
+
+## 🔍 Optimisation (trouver les meilleurs paramètres)
+
+### Lancement interactif
+
 ```bash
-streamlit run streamlit_app.py
+python3 run_optimization.py
 ```
-- Backtest interactif : FNG (régime) + Rainbow (sizing progressif), courbures ajustables.
-- Optimisation : grilles FNG/Rainbow, validation temporelle (walkforward/kfold), filtre trades/an.
-- Graphiques : prix (log) + Rainbow + allocation, FNG, equity vs B&H.
 
-## Paramètres principaux
-- `fng_buy/fng_sell`, `fng_curve_exp`, `fng_smoothing_days`.
-- `buy_curve_exp` (achat près du ruban bas), `sell_curve_exp` (patience avant ruban haut), `max_allocation_pct`, `ramp_step_pct`.
-- `min_hold_days`, `execute_next_day` (signal J+1).
+Le script vous guide pas à pas:
+1. **Chargement des données** (Fear & Greed + Prix BTC)
+2. **Choix de la méthode**:
+   - Grid Search (teste toutes les combinaisons)
+   - Optuna (plus rapide, intelligent)
+   - Test rapide (config par défaut)
+3. **Résultats**:
+   - Top 10 meilleures configs
+   - Performance détaillée
+   - Fichiers CSV sauvegardés
 
-## Validation temporelle (anti-overfit)
-- `--cv-mode none|kfold|walkforward` : recommandé `walkforward`.
-- `--cv-folds` : nombre de segments (ex: 4 sur ~6 ans ≈ 1,5 an chacun).
-- `--cv-warmup-days` : contexte ajouté avant chaque fold pour stabiliser les indicateurs.
-- Les métriques préfixées `med_` sont la médiane des folds et alimentent le score.
+### Exemple de sortie
 
-## Architecture
-- `src/fngbt/data.py` : FNG + prix BTC (yfinance), merge.
-- `src/fngbt/strategy.py` : moteur FNG (régime) + Rainbow (sizing progressif).
-- `src/fngbt/backtest.py` : backtest long-only avec frais proportionnels au turnover.
-- `src/fngbt/optimize.py` : grille/Optuna + validation temporelle, score equity vs B&H.
-- `src/fngbt/utils.py` : graphiques overview.
-- `streamlit_app.py` : UI (backtest + optimisation).
+```
+🏆 MEILLEURE CONFIGURATION
+================================================================================
+
+Paramètres:
+   FNG Buy Threshold:     25
+   FNG Sell Threshold:    75
+   Rainbow Buy Threshold: 0.30
+   Rainbow Sell Threshold:0.70
+   Min Position Change:   10%
+
+Performance (Walk-Forward CV):
+   Score:             1.25x vs B&H
+   Equity Finale:     18.21x
+   CAGR:              52.3%
+   Max Drawdown:      -35.2%
+   Sharpe Ratio:      1.82
+   Trades/an:         12.3
+```
+
+## 📁 Structure du code
+
+### Fichiers principaux
+
+```
+src/fngbt/
+├── data.py          # Chargement FNG et prix BTC
+├── strategy.py      # Logique de la stratégie (CŒUR)
+├── backtest.py      # Simulation avec frais
+├── optimize.py      # Walk-forward + Grid/Optuna
+└── metrics.py       # Calcul CAGR, Sharpe, etc.
+
+run_optimization.py  # Script principal
+test_strategy.py     # Tests avec données synthétiques
+```
+
+### Code simplifié et clair
+
+Le code a été **entièrement refactorisé** pour être:
+- ✅ **Simple**: chaque fonction fait UNE chose
+- ✅ **Clair**: noms explicites, commentaires en français
+- ✅ **Correct**: logique investisseur long terme respectée
+- ✅ **Testable**: facile à comprendre et débugger
+
+## 🎯 Paramètres à optimiser
+
+| Paramètre | Description | Plage typique |
+|-----------|-------------|---------------|
+| `fng_buy_threshold` | Seuil FNG pour acheter (FEAR) | 15-35 |
+| `fng_sell_threshold` | Seuil FNG pour vendre (GREED) | 65-85 |
+| `rainbow_buy_threshold` | Position Rainbow pour acheter | 0.2-0.4 |
+| `rainbow_sell_threshold` | Position Rainbow pour vendre | 0.6-0.8 |
+| `min_position_change_pct` | Changement min pour trader | 5-20% |
+
+## 📈 Walk-Forward Analysis
+
+Pour éviter l'**overfitting**, l'optimisation utilise un Walk-Forward:
+
+```
+Période 1: ████████░░░░  60% train → 40% test
+Période 2:    ████████░░░░  60% train → 40% test
+Période 3:       ████████░░░░  60% train → 40% test
+...
+```
+
+Le **score final** est la **médiane** des performances sur tous les folds de test.
+
+## 🎓 Comprendre les résultats
+
+### Métriques importantes
+
+- **Score**: Ratio Equity finale / Buy&Hold (> 1.0 = on bat le B&H)
+- **CAGR**: Rendement annualisé composé
+- **Max Drawdown**: Perte maximale depuis le sommet
+- **Sharpe Ratio**: Rendement ajusté au risque (> 1.0 = bon)
+- **Trades/an**: Fréquence de trading (10-50 = raisonnable)
+
+### ⚠️ Attention à l'overfitting !
+
+Si les meilleurs paramètres donnent:
+- ✅ Performance stable sur tous les folds → BON
+- ❌ Performance folle sur un fold, nulle sur les autres → OVERFITTING
+
+**Toujours vérifier** que les paramètres ont du **sens économique**:
+- Acheter en FEAR + prix bas = ✅ logique
+- Vendre en GREED + prix haut = ✅ logique
+- Paramètres bizarres (ex: acheter à 99 FNG) = ❌ suspect
+
+## 🔧 Personnalisation
+
+### Modifier l'espace de recherche
+
+Éditez `run_optimization.py` ligne 47:
+
+```python
+search_space = {
+    "fng_buy_threshold": [10, 15, 20, 25, 30],  # Vos valeurs
+    "fng_sell_threshold": [70, 75, 80, 85, 90],
+    "rainbow_buy_threshold": [0.2, 0.3, 0.4],
+    "rainbow_sell_threshold": [0.6, 0.7, 0.8],
+    "min_position_change_pct": [5.0, 10.0, 15.0],
+}
+```
+
+### Modifier les frais de transaction
+
+Ligne 79:
+```python
+fees_bps = 10.0  # 10 basis points = 0.1%
+```
+
+### Modifier le Walk-Forward
+
+Lignes 81-83:
+```python
+wf_n_folds = 5          # Nombre de périodes
+wf_train_ratio = 0.6    # 60% train, 40% test
+```
+
+## 📚 Exemple d'utilisation en code
+
+```python
+from src.fngbt.data import load_fng_alt, load_btc_prices, merge_daily
+from src.fngbt.strategy import StrategyConfig, build_signals
+from src.fngbt.backtest import run_backtest
+
+# Chargement des données
+fng = load_fng_alt()
+btc = load_btc_prices()
+df = merge_daily(fng, btc)
+
+# Configuration
+cfg = StrategyConfig(
+    fng_buy_threshold=25,
+    fng_sell_threshold=75,
+    rainbow_buy_threshold=0.3,
+    rainbow_sell_threshold=0.7,
+    min_position_change_pct=10.0
+)
+
+# Génération des signaux
+signals = build_signals(df, cfg)
+
+# Backtest
+result = run_backtest(signals, fees_bps=10.0)
+print(result["metrics"])
+```
+
+## 🐛 Debug / Problèmes
+
+### "ModuleNotFoundError: No module named 'yfinance'"
+
+```bash
+# Essayez d'installer sans build isolation
+pip install --no-build-isolation yfinance
+
+# Ou utilisez des données locales
+```
+
+### "ValueError: Pas assez de données"
+
+Il faut au moins 100 jours de données. Vérifiez que:
+- Le FNG API est accessible
+- Les dates correspondent
+
+### Les résultats sont bizarres
+
+1. Vérifiez que la logique est correcte avec `python3 test_strategy.py`
+2. Regardez les colonnes `fng_buy_score` et `rainbow_buy_score` dans le backtest
+3. Vérifiez que `execute_next_day=True` (évite look-ahead bias)
+
+## 💡 Conseils
+
+1. **Commencez petit**: testez d'abord avec la config par défaut
+2. **Visualisez**: ajoutez des graphiques pour comprendre les signaux
+3. **Soyez sceptique**: si c'est trop beau, c'est suspect
+4. **Testez live**: paper trading avant de risquer de l'argent réel
+5. **Diversifiez**: ne mettez JAMAIS tous vos œufs dans un panier
+
+## 📄 Licence
+
+Code libre, utilisez à vos risques et périls. Pas de conseil en investissement !
+
+---
+
+**Note**: Ce code est à des fins éducatives. Le trading de cryptomonnaies est risqué. Faites vos propres recherches (DYOR).
