@@ -154,12 +154,15 @@ def plot_strategy_results(df: pd.DataFrame, metrics: dict, config: dict, title: 
     # ========================================================================
     # Encadré avec métriques
     # ========================================================================
+    ratio_vs_bh = metrics.get('EquityFinal', 0)/max(metrics.get('BHEquityFinal', 1), 1e-12)
+    outperform_sign = "✅" if ratio_vs_bh > 1.0 else "❌"
+
     metrics_text = f"""
-PERFORMANCE
+PERFORMANCE (Full Dataset)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Strategy Equity:  {metrics.get('EquityFinal', 0):.2f}x
 B&H Equity:       {metrics.get('BHEquityFinal', 0):.2f}x
-Ratio vs B&H:     {metrics.get('EquityFinal', 0)/max(metrics.get('BHEquityFinal', 1), 1e-12):.2f}x
+Ratio vs B&H:     {ratio_vs_bh:.3f}x {outperform_sign}
 
 CAGR:             {metrics.get('CAGR', 0)*100:.1f}%
 B&H CAGR:         {metrics.get('BHCAGR', 0)*100:.1f}%

@@ -255,19 +255,31 @@ def main():
     print(f"   Rainbow Buy Threshold: {best['rainbow_buy_threshold']:.2f}")
     print(f"   Rainbow Sell Threshold:{best['rainbow_sell_threshold']:.2f}")
 
-    print("\nPerformance (Walk-Forward CV):")
+    print("\n📊 Performance (Walk-Forward CV - MÉDIANE DES FOLDS):")
     print(f"   Score:             {best['score']:.3f}x vs B&H")
     print(f"   Equity Finale:     {best.get('cv_EquityFinal', 0):.2f}x")
+    print(f"   B&H Equity:        {best.get('cv_BHEquityFinal', 0):.2f}x")
     print(f"   CAGR:              {best.get('cv_CAGR', 0)*100:.1f}%")
     print(f"   Max Drawdown:      {best.get('cv_MaxDD', 0)*100:.1f}%")
     print(f"   Sharpe Ratio:      {best.get('cv_Sharpe', 0):.2f}")
     print(f"   Trades/an:         {best.get('cv_trades_per_year', 0):.1f}")
 
-    print("\nPerformance (Full Dataset):")
-    print(f"   Equity Finale:     {best.get('full_EquityFinal', 0):.2f}x")
+    print("\n📈 Performance (Full Dataset - GRAPHIQUE CI-DESSOUS):")
+    full_equity = best.get('full_EquityFinal', 0)
+    full_bh = best.get('full_BHEquityFinal', 0)
+    full_ratio = full_equity / max(full_bh, 1e-12)
+    print(f"   Equity Finale:     {full_equity:.2f}x")
+    print(f"   B&H Equity:        {full_bh:.2f}x")
+    print(f"   Ratio vs B&H:      {full_ratio:.3f}x")
     print(f"   CAGR:              {best.get('full_CAGR', 0)*100:.1f}%")
     print(f"   Max Drawdown:      {best.get('full_MaxDD', 0)*100:.1f}%")
     print(f"   Sharpe Ratio:      {best.get('full_Sharpe', 0):.2f}")
+
+    print("\n⚠️  IMPORTANT:")
+    print(f"   Le SCORE ({best['score']:.3f}x) vient de la MÉDIANE des {wf_n_folds} folds (anti-overfitting)")
+    print(f"   Le GRAPHIQUE montre les résultats sur TOUT l'historique ({full_ratio:.3f}x)")
+    if abs(best['score'] - full_ratio) > 0.1:
+        print(f"   ⚠️  Différence significative → Risque d'overfitting ou variance entre périodes")
 
     # ========================================================================
     # 8. BACKTEST DE LA MEILLEURE CONFIG
@@ -305,7 +317,7 @@ def main():
         df=backtest_result["df"],
         metrics=backtest_result["metrics"],
         config=best_cfg.to_dict(),
-        title=f"Meilleure Stratégie - Score: {best['score']:.3f}x vs B&H"
+        title=f"Meilleure Stratégie - Full Dataset ({full_ratio:.3f}x vs B&H) | Score CV: {best['score']:.3f}x"
     )
 
     # Sauvegarde

@@ -491,7 +491,61 @@ def main():
 
                 with col3:
                     st.metric("Min Change", f"{best['min_position_change_pct']:.0f}%")
-                    st.metric("Score", f"{best['score']:.3f}x")
+                    st.metric("Score CV", f"{best['score']:.3f}x")
+
+                # Explication de la différence
+                st.info("""
+                **📊 Score CV vs Full Dataset:**
+                - **Score CV** ({:.3f}x): Médiane des performances sur les {} folds (anti-overfitting)
+                - **Full Dataset**: Performance sur TOUT l'historique (voir graphique ci-dessous)
+
+                Si grosse différence → Variance entre périodes ou overfitting possible
+                """.format(best['score'], actual_folds))
+
+                # Backtest et graphique de la meilleure config
+                st.header("📈 Visualisation de la meilleure configuration")
+
+                with st.spinner("Génération du backtest..."):
+                    best_cfg = StrategyConfig(
+                        fng_buy_threshold=int(best['fng_buy_threshold']),
+                        fng_sell_threshold=int(best['fng_sell_threshold']),
+                        rainbow_buy_threshold=float(best['rainbow_buy_threshold']),
+                        rainbow_sell_threshold=float(best['rainbow_sell_threshold']),
+                        max_allocation_pct=int(best.get('max_allocation_pct', 100)),
+                        min_allocation_pct=int(best.get('min_allocation_pct', 0)),
+                        min_position_change_pct=float(best.get('min_position_change_pct', 10.0)),
+                        execute_next_day=bool(best.get('execute_next_day', True)),
+                    )
+
+                    signals = build_signals(df, best_cfg)
+                    result = run_backtest(signals, fees_bps=10.0)
+
+                    # Métriques du full dataset
+                    full_metrics = result['metrics']
+                    full_ratio = full_metrics['EquityFinal'] / max(full_metrics['BHEquityFinal'], 1e-12)
+
+                    col1, col2, col3, col4 = st.columns(4)
+
+                    with col1:
+                        st.metric("Equity Finale", f"{full_metrics['EquityFinal']:.2f}x")
+
+                    with col2:
+                        st.metric("Ratio vs B&H", f"{full_ratio:.3f}x",
+                                 delta=f"{(full_ratio - 1.0)*100:.1f}%")
+
+                    with col3:
+                        st.metric("CAGR", f"{full_metrics['CAGR']*100:.1f}%")
+
+                    with col4:
+                        st.metric("Max DD", f"{full_metrics['MaxDD']*100:.1f}%")
+
+                    # Graphique interactif
+                    fig = plot_interactive_strategy(
+                        result['df'],
+                        full_metrics,
+                        best_cfg.to_dict()
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
 
 
 if __name__ == "__main__":
