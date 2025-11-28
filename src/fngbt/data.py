@@ -11,7 +11,7 @@ def load_fng_alt() -> pd.DataFrame:
     out = pd.DataFrame({"date": dt, "fng": pd.to_numeric(df["value"], errors="coerce")})
     return out.dropna().drop_duplicates("date").sort_values("date").reset_index(drop=True)
 
-def load_btc_prices(start=None, end=None) -> pd.DataFrame:
+def load_btc_prices(start="2018-01-01", end=None) -> pd.DataFrame:
     """BTC-USD daily close (naïf date), robuste aux MultiIndex et suffixes."""
     px = yf.download("BTC-USD", start=start, end=end, interval="1d", progress=False, auto_adjust=False, group_by="column")
     if px.empty: raise RuntimeError("yfinance BTC-USD vide.")
