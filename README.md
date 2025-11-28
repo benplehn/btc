@@ -37,7 +37,7 @@ Cela teste la stratégie avec des données synthétiques et affiche:
 
 ## 🔍 Optimisation (trouver les meilleurs paramètres)
 
-### Lancement interactif
+### Option 1: Script avec graphiques automatiques
 
 ```bash
 python3 run_optimization.py
@@ -52,7 +52,22 @@ Le script vous guide pas à pas:
 3. **Résultats**:
    - Top 10 meilleures configs
    - Performance détaillée
-   - Fichiers CSV sauvegardés
+   - **Graphiques automatiques** 📊
+   - Fichiers CSV + PNG sauvegardés
+
+### Option 2: Dashboard Web Interactif 🚀 (RECOMMANDÉ)
+
+```bash
+streamlit run app_dashboard.py
+```
+
+Interface web complète sur `http://localhost:8501` avec:
+- 📊 **Backtest interactif** (ajustez paramètres en temps réel)
+- 🔍 **Optimisation** (Optuna/Grid Search depuis l'interface)
+- 📈 **Graphiques Plotly** (zoom, hover, interactifs)
+- 💾 **Pas de fichiers à gérer**
+
+Voir [VISUALISATION.md](VISUALISATION.md) pour le guide complet
 
 ### Exemple de sortie
 
