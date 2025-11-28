@@ -27,19 +27,46 @@ def main():
     print("\n📊 Chargement des données...")
 
     try:
+        print("   → Chargement Fear & Greed Index...")
         fng_df = load_fng_alt()
         print(f"   ✓ Fear & Greed Index: {len(fng_df)} jours")
+        print(f"     Période FNG: {fng_df['date'].min().date()} → {fng_df['date'].max().date()}")
 
+        print("   → Chargement prix Bitcoin...")
         btc_df = load_btc_prices()
         print(f"   ✓ Prix Bitcoin: {len(btc_df)} jours")
+        print(f"     Période BTC: {btc_df['date'].min().date()} → {btc_df['date'].max().date()}")
 
         # Merge
+        print("   → Fusion des données...")
         df = merge_daily(fng_df, btc_df)
         print(f"   ✓ Données fusionnées: {len(df)} jours")
-        print(f"   ✓ Période: {df['date'].min().date()} → {df['date'].max().date()}")
+        print(f"   ✓ Période finale: {df['date'].min().date()} → {df['date'].max().date()}")
+
+        # Vérification minimum
+        if len(df) < 100:
+            print(f"\n⚠️  ATTENTION: Seulement {len(df)} jours de données disponibles.")
+            print("   Il faut au minimum 250 jours pour un walk-forward robuste (5 folds × 50 jours).")
+            print("\n   Causes possibles:")
+            print("   • Problème de connexion Internet")
+            print("   • API Fear & Greed indisponible")
+            print("   • yfinance ne retourne pas assez de données")
+            print("\n   Solutions:")
+            print("   1. Vérifiez votre connexion Internet")
+            print("   2. Réessayez plus tard")
+            print("   3. Utilisez le mode 'Test rapide' (option 3) sans walk-forward")
+
+            choice = input("\n   Continuer quand même? (y/n) [n]: ").strip().lower()
+            if choice != "y":
+                sys.exit(0)
 
     except Exception as e:
         print(f"\n❌ Erreur lors du chargement des données: {e}")
+        import traceback
+        print("\n--- Détails de l'erreur ---")
+        traceback.print_exc()
+        print("\n💡 Vérifiez que pandas, requests et yfinance sont installés:")
+        print("   pip install pandas requests yfinance")
         sys.exit(1)
 
     # ========================================================================
@@ -84,13 +111,24 @@ def main():
     choice = input("\nVotre choix (1/2/3) [défaut=2]: ").strip() or "2"
 
     # ========================================================================
-    # 4. OPTIMISATION
+    # 4. CONFIGURATION DE L'OPTIMISATION
     # ========================================================================
     fees_bps = 10.0  # 0.1% de frais
     use_walk_forward = True
-    wf_n_folds = 5  # 5 périodes de test
+
+    # Adaptation automatique du nombre de folds en fonction des données
+    n_days = len(df)
+    min_days_per_fold = 50
+    max_possible_folds = n_days // min_days_per_fold
+    wf_n_folds = min(5, max(2, max_possible_folds))  # Entre 2 et 5 folds
+
     wf_train_ratio = 0.6  # 60% train, 40% test
     min_trades_per_year = 0.5  # Au moins un trade tous les 2 ans
+
+    print(f"\n⚙️  Configuration Walk-Forward:")
+    print(f"   • Données disponibles: {n_days} jours")
+    print(f"   • Nombre de folds: {wf_n_folds}")
+    print(f"   • Taille approximative par fold: ~{n_days // wf_n_folds} jours")
 
     if choice == "1":
         # Grid Search

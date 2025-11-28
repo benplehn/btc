@@ -118,8 +118,15 @@ def walk_forward_cv(
     d = df.sort_values("date").reset_index(drop=True)
     n = len(d)
 
-    if n < 100:
-        raise ValueError("Pas assez de données pour walk-forward")
+    # Calcul du minimum de jours nécessaires
+    min_days_needed = n_folds * 50  # Au moins 50 jours par fold
+
+    if n < min_days_needed:
+        raise ValueError(
+            f"Pas assez de données pour walk-forward: {n} jours disponibles, "
+            f"besoin de {min_days_needed} minimum pour {n_folds} folds. "
+            f"Période disponible: {d['date'].min().date()} → {d['date'].max().date()}"
+        )
 
     # Calcul de la taille de chaque fenêtre
     fold_size = n // n_folds
