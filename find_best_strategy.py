@@ -151,7 +151,7 @@ def test_all_strategies(df: pd.DataFrame):
     # ========================================================================
     print("6. HOLD sauf euphorie extrême...")
     hold_df = df.copy()
-    from .strategy import calculate_rainbow_position
+    from src.fngbt.strategy import calculate_rainbow_position
     hold_df = calculate_rainbow_position(hold_df)
 
     # 100% sauf si FNG > 85 ET proche ATH
