@@ -1,0 +1,67 @@
+Chargement des données...
+✅ Chargé FNG depuis cache (2890 jours)
+✅ Chargé BTC depuis cache (2890 jours)
+✅ 2890 jours chargés
+
+====================================================================================================
+📊 ANALYSE PAR PÉRIODE: Où les stratégies battent-elles le B&H?
+====================================================================================================
+
+Période                 Jours        BTC %     B&H CAGR       Simple    Améliorée       Meilleure
+----------------------------------------------------------------------------------------------------
+2018 Bear Market          334       -77.5%       -80.4%        3.95x        1.94x          Simple ✅
+2019 Recovery             365       108.1%       108.1%       12.13x       15.29x       Améliorée ✅
+2020 Bull Start           366       346.4%       344.6%       13.58x       16.50x       Améliorée ✅
+2021 Peak                 365        69.0%        69.0%        1.62x        1.06x          Simple ✅
+2022 Bear                 365       -62.0%       -62.0%       10.52x        4.85x          Simple ✅
+2023 Recovery             365       156.6%       156.6%        4.98x        7.24x       Améliorée ✅
+2024-2025 Bull            698       121.0%        51.4%        2.76x        2.28x          Simple ✅
+Full Period              2858       644.6%        29.2%       17.92x        5.09x          Simple ✅
+
+====================================================================================================
+🔍 ANALYSE
+====================================================================================================
+
+✅ Périodes où une stratégie BAT le B&H:
+   • 2018 Bear Market: Simple = 3.95x vs B&H
+   • 2019 Recovery: Améliorée = 15.29x vs B&H
+   • 2020 Bull Start: Améliorée = 16.50x vs B&H
+   • 2021 Peak: Simple = 1.62x vs B&H
+   • 2022 Bear: Simple = 10.52x vs B&H
+   • 2023 Recovery: Améliorée = 7.24x vs B&H
+   • 2024-2025 Bull: Simple = 2.76x vs B&H
+   • Full Period: Simple = 17.92x vs B&H
+
+📊 Statistiques:
+   • Périodes testées: 8
+   • Périodes gagnantes: 8
+   • Taux de réussite: 100.0%
+
+🏆 Meilleure performance:
+   • Période: Full Period
+   • Stratégie: Simple
+   • Ratio: 17.92x vs B&H
+   • BTC return: 644.6%
+
+====================================================================================================
+💡 EXPLICATION
+====================================================================================================
+
+Sur 2018-2025, Bitcoin a été majoritairement HAUSSIER:
+   • 2018: Bear -73%
+   • 2019-2025: Bull massif +3400%
+
+Sur un marché HAUSSIER fort, toute réduction d'allocation = opportunité manquée.
+
+Les stratégies qui vendent (même partiellement) sous-performent car:
+   1. Elles sortent pendant les rallyes (FNG élevé)
+   2. Elles manquent les pumps verticaux
+   3. Les frais de trading grèvent la performance
+
+Pour BATTRE le B&H, il faudrait:
+   1. Une période BEAR→BULL (ex: 2018-2021 uniquement)
+   2. Timing parfait des tops et bottoms
+   3. Ou un marché sideways/range-bound
+
+Sur un bull massif comme 2018-2025: B&H est roi 👑
+    
