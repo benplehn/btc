@@ -1,0 +1,37 @@
+|--- rainbow_ma21 <= 0.81
+|   |--- fng_ma21 <= 77.21
+|   |   |--- rainbow_velocity_14 <= -0.00
+|   |   |   |--- fng_ma14 <= 63.18
+|   |   |   |   |--- truncated branch of depth 3
+|   |   |   |--- fng_ma14 >  63.18
+|   |   |   |   |--- truncated branch of depth 3
+|   |   |--- rainbow_velocity_14 >  -0.00
+|   |   |   |--- rainbow_ma7 <= 0.74
+|   |   |   |   |--- truncated branch of depth 3
+|   |   |   |--- rainbow_ma7 >  0.74
+|   |   |   |   |--- truncated branch of depth 3
+|   |--- fng_ma21 >  77.21
+|   |   |--- rainbow_above_ma <= 0.50
+|   |   |   |--- rainbow_ma21 <= 0.24
+|   |   |   |   |--- truncated branch of depth 3
+|   |   |   |--- rainbow_ma21 >  0.24
+|   |   |   |   |--- truncated branch of depth 3
+|   |   |--- rainbow_above_ma >  0.50
+|   |   |   |--- rainbow_ma21 <= 0.24
+|   |   |   |   |--- truncated branch of depth 3
+|   |   |   |--- rainbow_ma21 >  0.24
+|   |   |   |   |--- truncated branch of depth 3
+|--- rainbow_ma21 >  0.81
+|   |--- rainbow_velocity_7 <= -0.01
+|   |   |--- rainbow_ma21 <= 0.86
+|   |   |   |--- value: [81.30]
+|   |   |--- rainbow_ma21 >  0.86
+|   |   |   |--- value: [85.59]
+|   |--- rainbow_velocity_7 >  -0.01
+|   |   |--- fng_ma21 <= 57.71
+|   |   |   |--- rainbow_velocity_7 <= 0.00
+|   |   |   |   |--- value: [81.74]
+|   |   |   |--- rainbow_velocity_7 >  0.00
+|   |   |   |   |--- value: [80.54]
+|   |   |--- fng_ma21 >  57.71
+|   |   |   |--- value: [80.00]
