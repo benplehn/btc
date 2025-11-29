@@ -1,0 +1,88 @@
+Chargement données...
+✅ Chargé FNG depuis cache (2890 jours)
+✅ Chargé BTC depuis cache (2890 jours)
+✅ 2890 jours
+
+
+====================================================================================================
+🔬 VÉRIFICATION DU BACKTEST
+====================================================================================================
+
+✅ Test 1: 100% constant doit = B&H
+   BTC return brut: 6.14x
+   Backtest equity: 6.14x
+   Match: ✅ OUI
+
+✅ Test 2: 50% constant doit = ~moitié du return
+   Attendu: 3.57x
+   Obtenu: 12.87x
+   Match: ❌ NON
+
+✅ Test 3: Impact des frais
+   Sans frais: 6.14x
+   Avec frais: 6.14x
+   Différence: 0.0061x
+   (Devrait être ~0 car pas de trades)
+
+====================================================================================================
+====================================================================================================
+🧪 TEST: Stratégie Ultra-Simple (100% bas, 0% haut)
+====================================================================================================
+
+📊 Buy & Hold:
+   Equity: 6.14x
+   CAGR: 25.8%
+
+📊 Stratégie Simple (Rainbow 0.3-0.7):
+
+   SANS FRAIS:
+      Equity: 0.57x
+      CAGR: -6.8%
+      Ratio vs B&H: 0.093x
+      Max DD: -77.3%
+      Trades: 1498
+
+   AVEC FRAIS (10 bps):
+      Equity: 0.54x
+      CAGR: -7.5%
+      Ratio vs B&H: 0.087x
+      Max DD: -77.9%
+      Trades: 1498
+
+💰 Impact des frais:
+   Equity perdue: 0.04x (6.3%)
+
+🔍 ANALYSE:
+   ❌ Même SANS frais, stratégie sous-performe B&H
+   → Problème: allocation moyenne trop basse pendant le bull
+
+📊 Allocation moyenne: 63.4%
+   → Si allocation moyenne < 100%, on manque des gains sur bull market
+
+📅 Allocation par année:
+   2018: Alloc moyenne 50.5% | BTC return -80.4%
+   2019: Alloc moyenne 100.0% | BTC return +108.1%
+   2020: Alloc moyenne 69.3% | BTC return +346.4%
+   2021: Alloc moyenne 3.1% | BTC return +69.0%
+   2022: Alloc moyenne 63.3% | BTC return -62.0%
+   2023: Alloc moyenne 98.3% | BTC return +156.6%
+   2024: Alloc moyenne 64.6% | BTC return +111.1%
+   2025: Alloc moyenne 57.6% | BTC return -0.8%
+
+💾 Détails sauvegardés: outputs/extreme_simple_strategy.csv
+
+====================================================================================================
+💡 CONCLUSION
+====================================================================================================
+
+⚠️  Stratégie sous-performe: 0.087x
+
+Pourquoi?
+1. Allocation moyenne trop basse pendant bull market
+2. Frais de trading (1498 trades)
+3. Timing imparfait (ne vend pas exactement au top)
+
+Pour battre B&H, il faudrait:
+- Soit des tops/bottoms plus précis
+- Soit moins de réduction d'allocation
+- Soit une période avec plus de volatilité sideways
