@@ -1,0 +1,88 @@
+Chargement des données...
+✅ Chargé FNG depuis cache (2890 jours)
+✅ Chargé BTC depuis cache (2890 jours)
+✅ 2890 jours chargés (2018-01-01 → 2025-11-29)
+
+====================================================================================================
+🔍 GRID SEARCH EXHAUSTIF: Recherche des meilleures allocations
+====================================================================================================
+
+📊 Baseline Buy & Hold:
+   Equity: 6.14x | CAGR: 25.8%
+
+🔧 Grille de recherche:
+   FNG low: [15, 20, 25, 30]
+   FNG high: [70, 75, 80, 85]
+   Rainbow low: [0.2, 0.25, 0.3, 0.35]
+   Rainbow high: [0.65, 0.7, 0.75, 0.8]
+   Alloc Fear+Bas: [90, 95, 100]
+   Alloc Fear+Haut: [50, 60, 70, 80]
+   Alloc Greed+Bas: [40, 50, 60, 70]
+   Alloc Greed+Haut: [0, 10, 20, 30]
+
+⏳ Total de combinaisons à tester: 49,152
+   Estimation: ~2458 secondes
+   Testé: 1,000 | Meilleur ratio: 0.376x   Testé: 2,000 | Meilleur ratio: 0.448x   Testé: 3,000 | Meilleur ratio: 0.524x   Testé: 4,000 | Meilleur ratio: 0.524x   Testé: 5,000 | Meilleur ratio: 0.524x   Testé: 6,000 | Meilleur ratio: 0.524x   Testé: 7,000 | Meilleur ratio: 0.524x   Testé: 8,000 | Meilleur ratio: 0.524x   Testé: 9,000 | Meilleur ratio: 0.524x   Testé: 10,000 | Meilleur ratio: 0.524x   Testé: 11,000 | Meilleur ratio: 0.524x   Testé: 12,000 | Meilleur ratio: 0.524x   Testé: 13,000 | Meilleur ratio: 0.524x   Testé: 14,000 | Meilleur ratio: 0.524x   Testé: 15,000 | Meilleur ratio: 0.524x   Testé: 16,000 | Meilleur ratio: 0.524x   Testé: 17,000 | Meilleur ratio: 0.524x   Testé: 18,000 | Meilleur ratio: 0.524x   Testé: 19,000 | Meilleur ratio: 0.524x   Testé: 20,000 | Meilleur ratio: 0.524x   Testé: 21,000 | Meilleur ratio: 0.524x   Testé: 22,000 | Meilleur ratio: 0.524x   Testé: 23,000 | Meilleur ratio: 0.524x   Testé: 24,000 | Meilleur ratio: 0.524x   Testé: 25,000 | Meilleur ratio: 0.524x   Testé: 26,000 | Meilleur ratio: 0.524x   Testé: 27,000 | Meilleur ratio: 0.524x   Testé: 28,000 | Meilleur ratio: 0.524x   Testé: 29,000 | Meilleur ratio: 0.524x   Testé: 30,000 | Meilleur ratio: 0.524x   Testé: 31,000 | Meilleur ratio: 0.524x   Testé: 32,000 | Meilleur ratio: 0.524x   Testé: 33,000 | Meilleur ratio: 0.524x   Testé: 34,000 | Meilleur ratio: 0.524x   Testé: 35,000 | Meilleur ratio: 0.524x   Testé: 36,000 | Meilleur ratio: 0.524x   Testé: 37,000 | Meilleur ratio: 0.524x   Testé: 38,000 | Meilleur ratio: 0.524x   Testé: 39,000 | Meilleur ratio: 0.524x   Testé: 40,000 | Meilleur ratio: 0.524x   Testé: 41,000 | Meilleur ratio: 0.524x   Testé: 42,000 | Meilleur ratio: 0.524x   Testé: 43,000 | Meilleur ratio: 0.524x   Testé: 44,000 | Meilleur ratio: 0.524x   Testé: 45,000 | Meilleur ratio: 0.524x   Testé: 46,000 | Meilleur ratio: 0.524x   Testé: 47,000 | Meilleur ratio: 0.524x   Testé: 48,000 | Meilleur ratio: 0.524x   Testé: 49,000 | Meilleur ratio: 0.524x
+✅ Tests terminés: 49,152 combinaisons valides testées
+
+====================================================================================================
+🏆 TOP 20 STRATÉGIES (triées par ratio vs B&H)
+====================================================================================================
+
+Rank      Ratio   Equity    CAGR      DD  Trades | FNG       Rainbow    | Allocations (F+B, F+H, G+B, G+H)
+----------------------------------------------------------------------------------------------------
+🥇 1     0.524x    3.22x   15.9%  -65.0%    1944 | 15-70  0.35-0.80 |  90%,  50%,  70%,  30%
+🥈 2     0.493x    3.03x   15.0%  -64.1%    1940 | 15-70  0.35-0.75 |  90%,  50%,  70%,  30%
+🥉 3     0.492x    3.02x   15.0%  -65.7%    1944 | 15-70  0.35-0.80 |  90%,  60%,  70%,  30%
+   4     0.489x    3.00x   14.9%  -65.7%    1943 | 20-70  0.35-0.80 |  90%,  50%,  70%,  30%
+   5     0.485x    2.98x   14.8%  -62.6%    1944 | 15-70  0.35-0.80 |  90%,  50%,  60%,  30%
+   6     0.479x    2.94x   14.6%  -65.1%    2045 | 15-70  0.30-0.80 |  90%,  50%,  70%,  30%
+   7     0.477x    2.93x   14.5%  -65.5%    2103 | 15-75  0.35-0.80 |  90%,  50%,  70%,  30%
+   8     0.465x    2.86x   14.2%  -61.8%    1940 | 15-70  0.35-0.75 |  90%,  50%,  60%,  30%
+   9     0.461x    2.83x   14.1%  -63.2%    1936 | 15-70  0.35-0.70 |  90%,  50%,  70%,  30%
+   10    0.461x    2.83x   14.0%  -66.4%    1944 | 15-70  0.35-0.80 |  90%,  70%,  70%,  30%
+   11    0.460x    2.82x   14.0%  -64.9%    1939 | 20-70  0.35-0.75 |  90%,  50%,  70%,  30%
+   12    0.459x    2.82x   14.0%  -64.9%    1940 | 15-70  0.35-0.75 |  90%,  60%,  70%,  30%
+   13    0.455x    2.80x   13.9%  -66.5%    1943 | 20-70  0.35-0.80 |  90%,  60%,  70%,  30%
+   14    0.455x    2.79x   13.9%  -63.3%    1944 | 15-70  0.35-0.80 |  90%,  60%,  60%,  30%
+   15    0.455x    2.79x   13.8%  -62.7%    2045 | 15-70  0.30-0.80 |  90%,  50%,  60%,  30%
+   16    0.454x    2.79x   13.8%  -66.6%    1944 | 15-70  0.35-0.80 |  95%,  50%,  70%,  30%
+   17    0.451x    2.77x   13.7%  -66.2%    2103 | 15-75  0.35-0.80 |  90%,  60%,  70%,  30%
+   18    0.449x    2.76x   13.7%  -66.5%    1943 | 25-70  0.35-0.80 |  90%,  50%,  70%,  30%
+   19    0.449x    2.76x   13.7%  -64.7%    2099 | 15-75  0.35-0.75 |  90%,  50%,  70%,  30%
+   20    0.448x    2.75x   13.6%  -64.3%    2041 | 15-70  0.30-0.75 |  90%,  50%,  70%,  30%
+
+====================================================================================================
+🎯 MEILLEURE STRATÉGIE TROUVÉE
+====================================================================================================
+
+📊 Performance:
+   Equity finale: 3.22x
+   Ratio vs B&H: 0.524x
+   CAGR: 15.9% (vs 25.8% B&H)
+   Max Drawdown: -65.0%
+   Sharpe Ratio: 0.60
+   Nombre de trades: 1944
+
+🎚️  Paramètres:
+   FNG zones: [15, 70]
+   Rainbow zones: [0.35, 0.8]
+   Allocations:
+      Fear + Rainbow Bas:  90% (achat MAX)
+      Fear + Rainbow Haut: 50%
+      Greed + Rainbow Bas: 70%
+      Greed + Rainbow Haut: 30% (vente MAX)
+
+⚠️  Même la meilleure stratégie sous-performe B&H (0.52x)
+    Il faut probablement:
+    1. Élargir la grille de recherche
+    2. Tester d'autres logiques d'allocation
+    3. Ou accepter que sur ce bull market, B&H est roi
+
+💾 Top 100 résultats sauvegardés dans: outputs/grid_search_results.csv
+
+====================================================================================================
+📊 TEST DE LA MEILLEURE STRATÉGIE
+====================================================================================================
+
+💾 Backtest complet sauvegardé: outputs/best_strategy_backtest.csv
