@@ -1,0 +1,29 @@
+{
+  "name": "Rainbow Bands",
+  "rainbow_threshold": 0.6,
+  "alloc_cheap": 100,
+  "alloc_expensive": 95,
+  "description": "Ultra-conservative strategy: reduce to 95% when BTC expensive (Rainbow >= 0.60)",
+  "performance": {
+    "ratio_vs_bh": 1.1552913788397134,
+    "improvement_pct": 15.529137883971345,
+    "cagr_pct": 28.081111426313576,
+    "sharpe": 0.8319091580422712,
+    "max_dd_pct": -80.09663369822555
+  },
+  "trading": {
+    "total_trades": 658,
+    "trades_per_day": 0.22768166089965397,
+    "total_fees_eur": 0.6499962470406279,
+    "fees_pct_capital": 0.6499962470406279
+  },
+  "current_signal": {
+    "date": "2025-11-29 00:00:00",
+    "btc_price": 93796.85841048077,
+    "fng": "44",
+    "rainbow_position": 0.4115581543999409,
+    "allocation": 100,
+    "status": "BULLISH",
+    "reasoning": "Rainbow position (0.412) < 0.6 \u2192 BTC est CHEAP \u2192 100% allocation"
+  }
+}
