@@ -1,0 +1,4 @@
+name,fng_bands,rainbow_threshold,allocations,equity,ratio,trades,avg_alloc
+"Conservative: FNG 30-70, Rainbow 0.6","[30, 70]",0.6,"{'fear': [100, 100], 'neutral': [100, 95], 'greed': [95, 90]}",4.411462561947897,0.7181709285539662,738,96.4031141868512
+"Ultra-Conservative: FNG 25-75, Rainbow 0.7","[25, 75]",0.7,"{'fear': [100, 100], 'neutral': [100, 97], 'greed': [97, 95]}",5.031574918261403,0.8191230868206826,670,98.41384083044981
+"Aggressive: FNG 35-65, Rainbow 0.5","[35, 65]",0.5,"{'fear': [100, 95], 'neutral': [100, 90], 'greed': [90, 80]}",2.808684974105279,0.457244251207721,820,90.71453287197232
