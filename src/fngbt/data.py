@@ -27,10 +27,14 @@ def _fetch_yfinance_history(start_dt: pd.Timestamp, end_dt: pd.Timestamp) -> pd.
         start=start_dt,
         end=end_dt + pd.Timedelta(days=1),
         interval="1d",
+        auto_adjust=False,
         progress=False,
     )
     if df.empty:
         raise RuntimeError("Aucune donnée renvoyée par Yahoo Finance.")
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
 
     out = (
         df.reset_index()
