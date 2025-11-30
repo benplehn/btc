@@ -1,0 +1,8 @@
+forward_days,correlation,interpretation
+1,-0.3286955029515498,S&P 500 return aujourd'hui → BTC return dans 1j
+3,-0.34664032826459035,S&P 500 return aujourd'hui → BTC return dans 3j
+5,-0.33650318988712036,S&P 500 return aujourd'hui → BTC return dans 5j
+7,-0.3120955400948409,S&P 500 return aujourd'hui → BTC return dans 7j
+14,-0.2513906927183808,S&P 500 return aujourd'hui → BTC return dans 14j
+21,-0.21163326355314296,S&P 500 return aujourd'hui → BTC return dans 21j
+30,-0.19271101185579814,S&P 500 return aujourd'hui → BTC return dans 30j
