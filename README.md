@@ -21,8 +21,12 @@ FNG = 50 (neutre) + Rainbow Position = 0.5 (milieu) → Allocation ~50% BTC
 
 ```bash
 pip install pandas numpy requests optuna matplotlib
-# Note: yfinance peut avoir des problèmes, mais le code fonctionne sans
 ```
+
+Les prix BTC sont récupérés via l'API publique **alternative.me/crypto/api** (pas besoin de clé).
+Si l'API ne renvoie pas l'historique complet, passez un fichier CSV local (`date, close`)
+via `--csv` pour les scripts qui consomment les prix (ex:
+`python scripts/check_data.py --csv mon_fichier.csv`).
 
 ## 🧪 Test rapide
 
@@ -205,15 +209,6 @@ print(result["metrics"])
 ```
 
 ## 🐛 Debug / Problèmes
-
-### "ModuleNotFoundError: No module named 'yfinance'"
-
-```bash
-# Essayez d'installer sans build isolation
-pip install --no-build-isolation yfinance
-
-# Ou utilisez des données locales
-```
 
 ### "ValueError: Pas assez de données"
 
