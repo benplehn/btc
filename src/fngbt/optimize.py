@@ -49,6 +49,34 @@ def default_search_space() -> Dict[str, Iterable]:
     }
 
 
+def _augment_with_rainbow_diagnostics(
+    metrics: Dict[str, float],
+    df: pd.DataFrame,
+    buy_threshold: Optional[float] = None,
+    sell_threshold: Optional[float] = None,
+) -> Dict[str, float]:
+    if "rainbow_position" in df:
+        pos = df["rainbow_position"].astype(float)
+        metrics["rainbow_pos_mean"] = float(pos.mean())
+        metrics["rainbow_pos_median"] = float(pos.median())
+        metrics["rainbow_pos_std"] = float(pos.std())
+
+        if buy_threshold is not None:
+            metrics["rainbow_time_in_buy_zone"] = float((pos <= buy_threshold).mean())
+        if sell_threshold is not None:
+            metrics["rainbow_time_in_sell_zone"] = float((pos >= sell_threshold).mean())
+
+    if "rainbow_band" in df:
+        band = df["rainbow_band"].astype(float)
+        velocity = band.diff().abs().fillna(0.0)
+        metrics["rainbow_band_velocity"] = float(velocity.mean())
+        days = max(len(df), 1)
+        years = max(days / 365.0, 1e-9)
+        metrics["rainbow_band_cross_per_year"] = float((velocity > 0).sum() / years)
+
+    return metrics
+
+
 def evaluate_config(df: pd.DataFrame, cfg: StrategyConfig, fees_bps: float, initial_capital: float = 100.0) -> Dict:
     """
     Évalue une configuration sur tout le dataset
@@ -68,6 +96,13 @@ def evaluate_config(df: pd.DataFrame, cfg: StrategyConfig, fees_bps: float, init
     years = max(days / 365.0, 1e-9)
     metrics["trades_per_year"] = metrics.get("trades", 0) / years
 
+    metrics = _augment_with_rainbow_diagnostics(
+        metrics,
+        result["df"],
+        buy_threshold=getattr(cfg, "rainbow_buy_threshold", None),
+        sell_threshold=getattr(cfg, "rainbow_sell_threshold", None),
+    )
+
     return {
         "metrics": metrics,
         "df": result["df"],
@@ -75,19 +110,37 @@ def evaluate_config(df: pd.DataFrame, cfg: StrategyConfig, fees_bps: float, init
     }
 
 
-def score_result(metrics: Dict[str, float]) -> float:
+def score_result(
+    metrics: Dict[str, float],
+    objective: str = "equity_ratio",
+    turnover_penalty: float = 0.0,
+) -> float:
     """
-    Score d'une configuration
+    Score d'une configuration.
 
-    Objectif: maximiser le ratio Equity finale / Buy&Hold
+    objective:
+      - equity_ratio (EquityFinal / BHEquityFinal)
+      - equity_final (EquityFinal)
+      - equity_value (EquityFinalValue)
+      - cagr / sharpe / sortino / calmar (selon la métrique homonyme)
+    turnover_penalty: pénalité multiplicative appliquée au turnover total
     """
     equity_final = metrics.get("EquityFinal", 0.0)
     bh_equity_final = metrics.get("BHEquityFinal", 1.0)
+    equity_value = metrics.get("EquityFinalValue", equity_final)
 
-    # Ratio de performance vs Buy & Hold
-    ratio = equity_final / max(bh_equity_final, 1e-12)
+    base_score = {
+        "equity_ratio": equity_final / max(bh_equity_final, 1e-12),
+        "equity_final": equity_final,
+        "equity_value": equity_value,
+        "cagr": metrics.get("CAGR", 0.0),
+        "sharpe": metrics.get("Sharpe", 0.0),
+        "sortino": metrics.get("Sortino", 0.0),
+        "calmar": metrics.get("Calmar", 0.0),
+    }.get(objective, equity_final / max(bh_equity_final, 1e-12))
 
-    return ratio
+    penalty = turnover_penalty * metrics.get("turnover_total", 0.0)
+    return float(base_score - penalty)
 
 
 def walk_forward_cv(
@@ -161,6 +214,12 @@ def walk_forward_cv(
         days = len(test_only_df)
         years = max(days / 365.0, 1e-9)
         test_metrics["trades_per_year"] = test_metrics["trades"] / years
+        test_metrics = _augment_with_rainbow_diagnostics(
+            test_metrics,
+            test_only_df,
+            buy_threshold=getattr(cfg, "rainbow_buy_threshold", None),
+            sell_threshold=getattr(cfg, "rainbow_sell_threshold", None),
+        )
 
         fold_results.append({
             "fold": i,
@@ -210,6 +269,8 @@ def grid_search(
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 1.0,
     initial_capital: float = 100.0,
+    objective: str = "equity_ratio",
+    turnover_penalty: float = 0.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
     """
@@ -265,7 +326,7 @@ def grid_search(
             continue
 
         # Score
-        current_score = score_result(metrics)
+        current_score = score_result(metrics, objective=objective, turnover_penalty=turnover_penalty)
 
         # Stockage des résultats
         row = {
@@ -309,6 +370,8 @@ def optuna_search(
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 1.0,
     initial_capital: float = 100.0,
+    objective: str = "equity_ratio",
+    turnover_penalty: float = 0.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
     """
@@ -351,7 +414,7 @@ def optuna_search(
             raise optuna.TrialPruned()
 
         # Score à maximiser
-        return score_result(metrics)
+        return score_result(metrics, objective=objective, turnover_penalty=turnover_penalty)
 
     # Création de l'étude Optuna
     study = optuna.create_study(
@@ -458,6 +521,12 @@ def _evaluate_rainbow_only(
     days = metrics.get("Days", 1)
     years = max(days / 365.0, 1e-9)
     metrics["trades_per_year"] = metrics.get("trades", 0) / years
+    metrics = _augment_with_rainbow_diagnostics(
+        metrics,
+        result["df"],
+        buy_threshold=cfg.rainbow_buy_threshold,
+        sell_threshold=cfg.rainbow_sell_threshold,
+    )
     return {"metrics": metrics, "df": result["df"], "config": cfg}
 
 
@@ -470,6 +539,8 @@ def grid_search_rainbow_only(
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 0.5,
     initial_capital: float = 100.0,
+    objective: str = "equity_ratio",
+    turnover_penalty: float = 0.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
     combos = param_grid(search_space)
@@ -510,7 +581,7 @@ def grid_search_rainbow_only(
         if trades_per_year < min_trades_per_year:
             continue
 
-        current_score = score_result(metrics)
+        current_score = score_result(metrics, objective=objective, turnover_penalty=turnover_penalty)
 
         row = {
             **cfg.to_dict(),
@@ -546,6 +617,8 @@ def optuna_search_rainbow_only(
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 0.5,
     initial_capital: float = 100.0,
+    objective: str = "equity_ratio",
+    turnover_penalty: float = 0.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
     print(f"\n🔍 Optuna Rainbow-only: {n_trials} trials")
@@ -578,7 +651,7 @@ def optuna_search_rainbow_only(
         if trades_per_year < min_trades_per_year:
             raise optuna.TrialPruned()
 
-        return score_result(metrics)
+        return score_result(metrics, objective=objective, turnover_penalty=turnover_penalty)
 
     study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=42))
 

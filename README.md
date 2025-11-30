@@ -51,6 +51,11 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search optuna --n-trial
     --fees-bps 10 --initial-capital 100 --out outputs/rainbow_only_results.csv
 ```
 
+Pour viser un « meilleur prix final » selon votre critère, ajoutez par exemple `--objective equity_value` (maximiser la valeur
+euros finale) ou `--objective calmar` (rendement ajusté du drawdown). Le score par défaut reste le ratio `EquityFinal /
+BHEquityFinal`. Vous pouvez aussi décourager les stratégies trop actives via `--turnover-penalty 0.01` (pénalité de 0,01 par
+100 % de turnover cumulé).
+
 ## Utilisation détaillée
 ### `scripts/check_data.py`
 - Objet : vérifier la continuité des prix BTC (doublons, jours manquants, gaps) et optionnellement sauvegarder un graphique.
@@ -82,7 +87,7 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search optuna --n-trial
 ### `scripts/rainbow_only_optimize.py`
 - Objet : chercher automatiquement la meilleure stratégie basée uniquement sur le Rainbow Chart (pas de FNG).
 - Méthodes : Grid Search exhaustif ou Optuna (TPE) avec cross-validation walk-forward.
-- Entrées clés : bornes de search space via `fngbt.optimize.rainbow_only_search_space`, frais (`--fees-bps`), capital de départ (`--initial-capital`), nombre de folds walk-forward.
+- Entrées clés : bornes de search space via `fngbt.optimize.rainbow_only_search_space`, frais (`--fees-bps`), capital de départ (`--initial-capital`), nombre de folds walk-forward, objectif de score (`--objective`) et pénalité d'activité (`--turnover-penalty`).
 - Sorties :
   - `outputs/rainbow_only_results.csv` classé par score décroissant.
   - Résumé console de la meilleure config (seuils d'achat/vente, allocations, exécution J+1) et backtest complet associé.
@@ -97,7 +102,8 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search optuna --n-trial
   - `MaxDD`, `BHMaxDD`
   - `Sharpe`, `Sortino`, `Calmar`
   - `trades`, `trades_per_year`, `turnover_total`, `avg_allocation`
-- **Diagnostics Rainbow** : la fonction `build_rainbow_only_signals` (voir `src/fngbt/strategy.py`) retourne pour chaque jour la bande touchée, le score de distance au centre des bandes et l'allocation cible, facilitant l'analyse de vélocité de bande et de timing d'entrée/sortie.
+  - Diagnostics Rainbow pour tester les « paliers » et la vélocité : `rainbow_pos_mean/median/std`, temps passé sous le seuil d'achat ou au-dessus du seuil de vente, vitesse moyenne de changement de bande (`rainbow_band_velocity`) et franchissements de bande annualisés (`rainbow_band_cross_per_year`).
+- **Diagnostics Rainbow** : la fonction `build_rainbow_only_signals` (voir `src/fngbt/strategy.py`) retourne pour chaque jour la bande touchée, le score de distance au centre des bandes et l'allocation cible, facilitant l'analyse de vélocité de bande, d'agressivité progressive via `allocation_power` et de timing d'entrée/sortie.
 
 ## Personnalisation
 - **Espace de recherche** : modifiez `search_space` dans `run_optimization.py` pour ajouter vos propres seuils.

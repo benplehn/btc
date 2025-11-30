@@ -32,6 +32,18 @@ def parse_args():
     p.add_argument("--min-trades-per-year", type=float, default=0.5, help="Filtre trades/an minimum.")
     p.add_argument("--wf-folds", type=int, default=5, help="Nombre de folds walk-forward.")
     p.add_argument("--wf-train-ratio", type=float, default=0.6, help="Ratio train pour walk-forward.")
+    p.add_argument(
+        "--objective",
+        choices=["equity_ratio", "equity_final", "equity_value", "cagr", "sharpe", "sortino", "calmar"],
+        default="equity_ratio",
+        help="Métrique à maximiser pendant la recherche.",
+    )
+    p.add_argument(
+        "--turnover-penalty",
+        type=float,
+        default=0.0,
+        help="Pénalité par unité de turnover (ex: 0.01 réduit le score de 0.01 par changement de 100%).",
+    )
     p.add_argument("--out", type=str, default="outputs/rainbow_only_results.csv", help="Fichier CSV de sortie.")
     return p.parse_args()
 
@@ -42,6 +54,7 @@ def main():
     print("=" * 80)
     print("🚀 OPTIMISATION RAINBOW ONLY")
     print("=" * 80)
+    print(f"🎯 Objectif: {args.objective}  |  Pénalité turnover: {args.turnover_penalty}")
 
     px = load_btc_prices(start=args.start, end=args.end)
     print(f"Données BTC chargées: {len(px)} jours du {px['date'].min().date()} au {px['date'].max().date()}")
@@ -58,6 +71,8 @@ def main():
             use_walk_forward=True,
             wf_n_folds=args.wf_folds,
             wf_train_ratio=args.wf_train_ratio,
+            objective=args.objective,
+            turnover_penalty=args.turnover_penalty,
         )
     else:
         results_df = optuna_search_rainbow_only(
@@ -70,6 +85,8 @@ def main():
             use_walk_forward=True,
             wf_n_folds=args.wf_folds,
             wf_train_ratio=args.wf_train_ratio,
+            objective=args.objective,
+            turnover_penalty=args.turnover_penalty,
         )
 
     out = Path(args.out)
@@ -101,6 +118,19 @@ def main():
         if k in best:
             val = best[k]
             print(f"   {k}: {val:.4f}" if isinstance(val, float) else f"   {k}: {val}")
+
+    print("\nDiagnostics Rainbow (médian walk-forward):")
+    for k in [
+        "cv_rainbow_pos_mean",
+        "cv_rainbow_pos_std",
+        "cv_rainbow_time_in_buy_zone",
+        "cv_rainbow_time_in_sell_zone",
+        "cv_rainbow_band_velocity",
+        "cv_rainbow_band_cross_per_year",
+    ]:
+        if k in best:
+            val = best[k]
+            print(f"   {k}: {val:.4f}")
 
     cfg = RainbowOnlyConfig(
         rainbow_buy_threshold=float(best["rainbow_buy_threshold"]),
