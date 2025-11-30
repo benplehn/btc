@@ -35,7 +35,9 @@ def build_rainbow_v2(px: pd.DataFrame, extend_to: str | None = None) -> pd.DataF
     deviation = np.log10(df["close"].clip(lower=1e-12)) - (
         intercept + slope * np.log10((df["date"] - GENESIS).dt.days.clip(lower=1).astype(float))
     )
-    band_devs = np.quantile(deviation, quantiles)
+    min_dev = np.quantile(deviation, quantiles[0])
+    max_dev = float(deviation.max())
+    band_devs = np.linspace(min_dev, max_dev, len(quantiles))
 
     def _lines(dates: Iterable[pd.Timestamp]) -> pd.DataFrame:
         dates = pd.to_datetime(pd.Index(dates)).sort_values()
