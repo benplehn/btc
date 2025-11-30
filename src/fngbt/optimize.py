@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 from .backtest import run_backtest
-from .strategy import StrategyConfig, build_signals
+from .strategy import StrategyConfig, RainbowOnlyConfig, build_signals, build_rainbow_only_signals
 
 
 def param_grid(space: Dict[str, Iterable]) -> List[Dict]:
@@ -49,7 +49,7 @@ def default_search_space() -> Dict[str, Iterable]:
     }
 
 
-def evaluate_config(df: pd.DataFrame, cfg: StrategyConfig, fees_bps: float) -> Dict:
+def evaluate_config(df: pd.DataFrame, cfg: StrategyConfig, fees_bps: float, initial_capital: float = 100.0) -> Dict:
     """
     Évalue une configuration sur tout le dataset
 
@@ -60,7 +60,7 @@ def evaluate_config(df: pd.DataFrame, cfg: StrategyConfig, fees_bps: float) -> D
     signals_df = build_signals(df, cfg)
 
     # Backtest
-    result = run_backtest(signals_df, fees_bps=fees_bps)
+    result = run_backtest(signals_df, fees_bps=fees_bps, initial_capital=initial_capital)
 
     # Calcul de trades par an
     metrics = result["metrics"]
@@ -94,6 +94,7 @@ def walk_forward_cv(
     df: pd.DataFrame,
     cfg: StrategyConfig,
     fees_bps: float,
+    initial_capital: float = 100.0,
     n_folds: int = 5,
     train_ratio: float = 0.6
 ) -> Dict:
@@ -146,7 +147,7 @@ def walk_forward_cv(
         test_df = d.iloc[context_start:test_end].copy()
 
         # Évaluation sur cette période de test
-        result = evaluate_config(test_df, cfg, fees_bps)
+        result = evaluate_config(test_df, cfg, fees_bps, initial_capital=initial_capital)
 
         # On garde seulement les métriques de la période de test pure
         # (après le contexte)
@@ -155,7 +156,7 @@ def walk_forward_cv(
 
         # Recalcul des métriques sur la période de test pure
         from .metrics import compute_metrics
-        test_metrics = compute_metrics(test_only_df)
+        test_metrics = compute_metrics(test_only_df, initial_capital=initial_capital)
         test_metrics["trades"] = int(test_only_df["trade"].sum())
         days = len(test_only_df)
         years = max(days / 365.0, 1e-9)
@@ -172,7 +173,7 @@ def walk_forward_cv(
 
     if not fold_results:
         # Fallback: évaluation sur tout le dataset
-        result = evaluate_config(d, cfg, fees_bps)
+        result = evaluate_config(d, cfg, fees_bps, initial_capital=initial_capital)
         return {
             "folds": [],
             "median_metrics": result["metrics"],
@@ -190,7 +191,7 @@ def walk_forward_cv(
         median_metrics[key] = float(np.median(values))
 
     # Évaluation sur le dataset complet pour référence
-    full_result = evaluate_config(d, cfg, fees_bps)
+    full_result = evaluate_config(d, cfg, fees_bps, initial_capital=initial_capital)
 
     return {
         "folds": fold_results,
@@ -208,6 +209,7 @@ def grid_search(
     wf_n_folds: int = 5,
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 1.0,
+    initial_capital: float = 100.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
     """
@@ -245,6 +247,7 @@ def grid_search(
             # Walk-forward cross-validation
             wf_result = walk_forward_cv(
                 df, cfg, fees_bps,
+                initial_capital=initial_capital,
                 n_folds=wf_n_folds,
                 train_ratio=wf_train_ratio
             )
@@ -252,7 +255,7 @@ def grid_search(
             full_metrics = wf_result["full_metrics"]
         else:
             # Évaluation simple sur tout le dataset
-            result = evaluate_config(df, cfg, fees_bps)
+            result = evaluate_config(df, cfg, fees_bps, initial_capital=initial_capital)
             metrics = result["metrics"]
             full_metrics = metrics
 
@@ -305,6 +308,7 @@ def optuna_search(
     wf_n_folds: int = 5,
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 1.0,
+    initial_capital: float = 100.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
     """
@@ -332,12 +336,13 @@ def optuna_search(
         if use_walk_forward:
             wf_result = walk_forward_cv(
                 df, cfg, fees_bps,
+                initial_capital=initial_capital,
                 n_folds=wf_n_folds,
                 train_ratio=wf_train_ratio
             )
             metrics = wf_result["median_metrics"]
         else:
-            result = evaluate_config(df, cfg, fees_bps)
+            result = evaluate_config(df, cfg, fees_bps, initial_capital=initial_capital)
             metrics = result["metrics"]
 
         # Filtre trades/an
@@ -386,11 +391,235 @@ def optuna_search(
 
         # Ré-évaluation pour avoir toutes les métriques
         if use_walk_forward:
-            wf_result = walk_forward_cv(df, cfg, fees_bps, n_folds=wf_n_folds, train_ratio=wf_train_ratio)
+            wf_result = walk_forward_cv(
+                df,
+                cfg,
+                fees_bps,
+                initial_capital=initial_capital,
+                n_folds=wf_n_folds,
+                train_ratio=wf_train_ratio,
+            )
             metrics = wf_result["median_metrics"]
             full_metrics = wf_result["full_metrics"]
         else:
-            result = evaluate_config(df, cfg, fees_bps)
+            result = evaluate_config(df, cfg, fees_bps, initial_capital=initial_capital)
+            metrics = result["metrics"]
+            full_metrics = metrics
+
+        row = {
+            **cfg.to_dict(),
+            "score": trial.value,
+            **{f"cv_{k}": v for k, v in metrics.items()},
+            **{f"full_{k}": v for k, v in full_metrics.items()},
+        }
+        results.append(row)
+
+    results_df = pd.DataFrame(results)
+    if not results_df.empty:
+        results_df = results_df.sort_values("score", ascending=False).reset_index(drop=True)
+
+    return results_df
+
+
+# === Rainbow-only optimisation ==================================================
+
+
+def rainbow_only_search_space(
+    buy_thresholds: Iterable[float] | None = None,
+    sell_thresholds: Iterable[float] | None = None,
+    allocation_powers: Iterable[float] | None = None,
+    max_allocations: Iterable[int] | None = None,
+    min_allocations: Iterable[int] | None = None,
+    min_position_changes: Iterable[float] | None = None,
+    execute_next_day: Iterable[bool] | None = None,
+    band_counts: Iterable[int] | None = None,
+) -> Dict[str, Iterable]:
+    return {
+        "rainbow_buy_threshold": list(buy_thresholds or [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]),
+        "rainbow_sell_threshold": list(sell_thresholds or [0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85]),
+        "allocation_power": list(allocation_powers or [0.8, 1.0, 1.2, 1.5]),
+        "max_allocation_pct": list(max_allocations or [75, 100]),
+        "min_allocation_pct": list(min_allocations or [0, 10, 20]),
+        "min_position_change_pct": list(min_position_changes or [2.5, 5.0, 10.0, 15.0]),
+        "execute_next_day": list(execute_next_day or [True]),
+        "band_count": list(band_counts or [8]),
+    }
+
+
+def _evaluate_rainbow_only(
+    df: pd.DataFrame,
+    cfg: RainbowOnlyConfig,
+    fees_bps: float,
+    initial_capital: float,
+) -> Dict:
+    signals_df = build_rainbow_only_signals(df, cfg)
+    result = run_backtest(signals_df, fees_bps=fees_bps, initial_capital=initial_capital)
+    metrics = result["metrics"]
+    days = metrics.get("Days", 1)
+    years = max(days / 365.0, 1e-9)
+    metrics["trades_per_year"] = metrics.get("trades", 0) / years
+    return {"metrics": metrics, "df": result["df"], "config": cfg}
+
+
+def grid_search_rainbow_only(
+    df: pd.DataFrame,
+    search_space: Dict[str, Iterable],
+    fees_bps: float = 10.0,
+    use_walk_forward: bool = True,
+    wf_n_folds: int = 5,
+    wf_train_ratio: float = 0.6,
+    min_trades_per_year: float = 0.5,
+    initial_capital: float = 100.0,
+    progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
+) -> pd.DataFrame:
+    combos = param_grid(search_space)
+    total = len(combos)
+
+    print(f"\n🔍 Grid Search Rainbow-only: {total} combinaisons à tester")
+    print(f"📊 Walk-Forward: {'OUI' if use_walk_forward else 'NON'}")
+    if use_walk_forward:
+        print(f"   - Folds: {wf_n_folds}")
+        print(f"   - Train/Test ratio: {wf_train_ratio:.0%}/{1-wf_train_ratio:.0%}")
+
+    results = []
+    best_score = -float("inf")
+
+    for idx, params in enumerate(combos, start=1):
+        cfg = RainbowOnlyConfig(**params)
+
+        if cfg.rainbow_buy_threshold >= cfg.rainbow_sell_threshold:
+            continue
+
+        if use_walk_forward:
+            wf_result = walk_forward_cv(
+                df,
+                cfg,  # type: ignore[arg-type]
+                fees_bps,
+                initial_capital=initial_capital,
+                n_folds=wf_n_folds,
+                train_ratio=wf_train_ratio,
+            )
+            metrics = wf_result["median_metrics"]
+            full_metrics = wf_result["full_metrics"]
+        else:
+            result = _evaluate_rainbow_only(df, cfg, fees_bps, initial_capital)
+            metrics = result["metrics"]
+            full_metrics = metrics
+
+        trades_per_year = metrics.get("trades_per_year", 0.0)
+        if trades_per_year < min_trades_per_year:
+            continue
+
+        current_score = score_result(metrics)
+
+        row = {
+            **cfg.to_dict(),
+            "score": current_score,
+            **{f"cv_{k}": v for k, v in metrics.items()},
+            **{f"full_{k}": v for k, v in full_metrics.items()},
+        }
+        results.append(row)
+
+        best_score = max(best_score, current_score)
+
+        if progress_cb:
+            progress_cb(idx, total, best_score if best_score != -float("inf") else None)
+
+        if idx % 10 == 0 or idx == total:
+            print(f"   Progression: {idx}/{total} ({idx/total*100:.1f}%) - Best score: {best_score:.3f}")
+
+    results_df = pd.DataFrame(results)
+    if not results_df.empty:
+        results_df = results_df.sort_values("score", ascending=False).reset_index(drop=True)
+
+    print(f"\n✅ Grid Search Rainbow terminé: {len(results_df)} configurations valides trouvées")
+    return results_df
+
+
+def optuna_search_rainbow_only(
+    df: pd.DataFrame,
+    search_space: Dict[str, Iterable],
+    n_trials: int = 120,
+    fees_bps: float = 10.0,
+    use_walk_forward: bool = True,
+    wf_n_folds: int = 5,
+    wf_train_ratio: float = 0.6,
+    min_trades_per_year: float = 0.5,
+    initial_capital: float = 100.0,
+    progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
+) -> pd.DataFrame:
+    print(f"\n🔍 Optuna Rainbow-only: {n_trials} trials")
+    print(f"📊 Walk-Forward: {'OUI' if use_walk_forward else 'NON'}")
+
+    param_keys = list(search_space.keys())
+
+    def objective(trial: optuna.Trial):
+        params = {key: trial.suggest_categorical(key, list(search_space[key])) for key in param_keys}
+        cfg = RainbowOnlyConfig(**params)
+
+        if cfg.rainbow_buy_threshold >= cfg.rainbow_sell_threshold:
+            raise optuna.TrialPruned()
+
+        if use_walk_forward:
+            wf_result = walk_forward_cv(
+                df,
+                cfg,  # type: ignore[arg-type]
+                fees_bps,
+                initial_capital=initial_capital,
+                n_folds=wf_n_folds,
+                train_ratio=wf_train_ratio,
+            )
+            metrics = wf_result["median_metrics"]
+        else:
+            result = _evaluate_rainbow_only(df, cfg, fees_bps, initial_capital)
+            metrics = result["metrics"]
+
+        trades_per_year = metrics.get("trades_per_year", 0.0)
+        if trades_per_year < min_trades_per_year:
+            raise optuna.TrialPruned()
+
+        return score_result(metrics)
+
+    study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=42))
+
+    completed = 0
+    best_val: Optional[float] = None
+
+    def _callback(study: optuna.Study, trial: optuna.Trial):
+        nonlocal completed, best_val
+        if trial.state == optuna.trial.TrialState.COMPLETE:
+            completed += 1
+            best_val = study.best_value
+            if completed % 10 == 0:
+                print(f"   Trial {completed}/{n_trials} - Best: {best_val:.3f}")
+        if progress_cb:
+            progress_cb(completed, n_trials, best_val)
+
+    study.optimize(objective, n_trials=n_trials, callbacks=[_callback], show_progress_bar=False)
+
+    print(f"\n✅ Optuna Rainbow terminé: {len(study.trials)} trials")
+
+    results = []
+    for trial in study.trials:
+        if trial.state != optuna.trial.TrialState.COMPLETE:
+            continue
+
+        params = trial.params
+        cfg = RainbowOnlyConfig(**params)
+
+        if use_walk_forward:
+            wf_result = walk_forward_cv(
+                df,
+                cfg,  # type: ignore[arg-type]
+                fees_bps,
+                initial_capital=initial_capital,
+                n_folds=wf_n_folds,
+                train_ratio=wf_train_ratio,
+            )
+            metrics = wf_result["median_metrics"]
+            full_metrics = wf_result["full_metrics"]
+        else:
+            result = _evaluate_rainbow_only(df, cfg, fees_bps, initial_capital)
             metrics = result["metrics"]
             full_metrics = metrics
 

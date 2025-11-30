@@ -34,6 +34,25 @@ class StrategyConfig:
         return asdict(self)
 
 
+@dataclass
+class RainbowOnlyConfig:
+    """Configuration d'une stratégie uniquement basée sur le Rainbow Chart."""
+
+    rainbow_buy_threshold: float = 0.25
+    rainbow_sell_threshold: float = 0.75
+    allocation_power: float = 1.0  # >1 = agressif sur les extrêmes
+
+    max_allocation_pct: int = 100
+    min_allocation_pct: int = 0
+    min_position_change_pct: float = 5.0
+    execute_next_day: bool = True
+
+    band_count: int = 8  # Utilisé pour les métriques/diagnostics
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
 def calculate_rainbow_position(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calcule la position du prix dans le Rainbow Chart
@@ -146,6 +165,72 @@ def calculate_allocation(df: pd.DataFrame, cfg: StrategyConfig) -> pd.DataFrame:
     d["rainbow_buy_score"] = rainbow_buy_score
     d["combined_score"] = combined_score
     d["allocation_pct"] = allocation_pct
+
+    return d
+
+
+def _quantize_bands(rainbow_pos: pd.Series, band_count: int) -> tuple[pd.Series, pd.Series]:
+    band_edges = np.linspace(0, 1, band_count + 1)
+    band_ids = np.digitize(rainbow_pos.clip(0.0, 1.0), band_edges[1:-1], right=False)
+    labels = [
+        "🔥 Fortement survendu",
+        "Survendu",
+        "Bonne valeur",
+        "Zone neutre",
+        "Chaleur modérée",
+        "Suracheté",
+        "Bull euphérique",
+        "🚀 Bulle",
+    ]
+    if band_count > len(labels):
+        labels = labels + [f"Bande {i+1}" for i in range(len(labels), band_count)]
+    label_map = {i: labels[i] for i in range(min(band_count, len(labels)))}
+    band_labels = band_ids.map(label_map)
+    return band_ids, band_labels
+
+
+def build_rainbow_only_signals(df: pd.DataFrame, cfg: RainbowOnlyConfig) -> pd.DataFrame:
+    """
+    Génère une stratégie long-only basée uniquement sur la position dans le Rainbow Chart.
+
+    Logique :
+    - En dessous de `rainbow_buy_threshold` → allocation max
+    - Au-dessus de `rainbow_sell_threshold` → allocation min
+    - Entre les deux → interpolation lissée par `allocation_power`
+    """
+
+    if cfg.rainbow_buy_threshold >= cfg.rainbow_sell_threshold:
+        raise ValueError("Le seuil d'achat doit être inférieur au seuil de vente pour le Rainbow.")
+
+    d = calculate_rainbow_position(df)
+    rainbow_pos = d["rainbow_position"].clip(0.0, 1.0)
+
+    span = cfg.rainbow_sell_threshold - cfg.rainbow_buy_threshold
+    interp = ((cfg.rainbow_sell_threshold - rainbow_pos) / max(span, 1e-9)).clip(0.0, 1.0)
+    rainbow_score = interp ** cfg.allocation_power
+
+    allocation_pct = cfg.min_allocation_pct + rainbow_score * (cfg.max_allocation_pct - cfg.min_allocation_pct)
+    allocation_pct = np.clip(allocation_pct, cfg.min_allocation_pct, cfg.max_allocation_pct)
+
+    # Application du seuil de changement minimum
+    pos_filtered = []
+    current_pos = 0.0
+    for target in allocation_pct:
+        if abs(target - current_pos) >= cfg.min_position_change_pct:
+            current_pos = target
+        pos_filtered.append(current_pos)
+
+    d["rainbow_score"] = rainbow_score
+    d["pos_raw"] = allocation_pct
+    d["pos_target"] = pd.Series(pos_filtered, index=d.index)
+    d["pos"] = d["pos_target"].shift(1).fillna(0.0) if cfg.execute_next_day else d["pos_target"]
+    d["pos_change"] = d["pos"].diff().fillna(0.0)
+    d["trade"] = (d["pos_change"].abs() > 0.01).astype(int)
+
+    # Diagnostic: bande actuelle dans le dégradé
+    band_ids, band_labels = _quantize_bands(rainbow_pos, cfg.band_count)
+    d["rainbow_band"] = band_ids
+    d["rainbow_band_label"] = band_labels
 
     return d
 

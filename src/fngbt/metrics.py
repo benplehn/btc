@@ -7,7 +7,7 @@ def _max_dd(equity: pd.Series) -> float:
     dd = equity/peak - 1.0
     return float(dd.min())
 
-def compute_metrics(d: pd.DataFrame) -> dict:
+def compute_metrics(d: pd.DataFrame, initial_capital: float = 100.0) -> dict:
     eq = d["equity"]; bh = d["bh_equity"]
     n = max(len(d), 1)
     cagr = eq.iloc[-1]**(ANN/n) - 1
@@ -24,7 +24,9 @@ def compute_metrics(d: pd.DataFrame) -> dict:
     calmar = (cagr)/(abs(mdd)+1e-12)
     return {
         "EquityFinal": float(eq.iloc[-1]),
+        "EquityFinalValue": float(eq.iloc[-1] * initial_capital),
         "BHEquityFinal": float(bh.iloc[-1]),
+        "BHEquityFinalValue": float(bh.iloc[-1] * initial_capital),
         "CAGR": float(cagr),
         "BHCAGR": float(bh_cagr),
         "Vol": float(vol),
