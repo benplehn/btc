@@ -1,0 +1,5 @@
+Stratégie,Equity (EUR),Ratio vs B&H,OOS Validé,Atteint 18x
+Rainbow Cheap Only (fixe 0.25),64775.0,105.45,Non (1.84x OOS),❌ (overfitting)
+Rainbow Dynamic (Linear Threshold),2.009294826776891,1.612916998084291,Oui ✅,❌
+ML avec S&P 500 (OOS validé),788.7144556166027,1.284,Oui ✅,❌
+Buy & Hold,614.2635947169803,1.0,N/A,❌
