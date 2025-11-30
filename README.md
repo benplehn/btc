@@ -1,244 +1,87 @@
-# 🚀 Bitcoin Strategy Optimizer - FNG + Rainbow Chart
+# 🚀 Bitcoin Strategy Optimizer
 
-**Stratégie d'investissement long terme Bitcoin basée sur 2 indicateurs:**
-1. **Fear & Greed Index** (sentiment de marché)
-2. **Rainbow Chart** (position du prix vs régression historique)
+Outils pour analyser une stratégie long-terme Bitcoin basée sur le **Fear & Greed Index** et un **Rainbow Chart v2** (régression log + bandes de quantiles). Les scripts principaux permettent de vérifier les données, tracer le Rainbow et lancer des optimisations.
 
-## 📊 Logique de la stratégie
+## Sommaire rapide
+- [Installation](#installation)
+- [Sources de données](#sources-de-données)
+- [Commandes clés](#commandes-clés)
+- [Utilisation détaillée](#utilisation-détaillée)
+- [Personnalisation](#personnalisation)
+- [Conseils & dépannage](#conseils--dépannage)
+- [Avertissement](#avertissement)
 
-### Principe investisseur long terme
-- **ACHETER** : FNG bas (FEAR) + Prix proche du ruban BAS → Allocation élevée
-- **VENDRE** : FNG haut (GREED) + Prix proche du ruban HAUT → Allocation basse
-
-### Exemple concret
-```
-FNG = 20 (FEAR) + Rainbow Position = 0.2 (prix très bas) → Allocation 100% BTC
-FNG = 80 (GREED) + Rainbow Position = 0.8 (prix très haut) → Allocation 0% BTC
-FNG = 50 (neutre) + Rainbow Position = 0.5 (milieu) → Allocation ~50% BTC
-```
-
-## 🛠️ Installation
-
+## Installation
 ```bash
-pip install pandas numpy requests optuna matplotlib
-# Note: yfinance peut avoir des problèmes, mais le code fonctionne sans
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-## 🧪 Test rapide
+Python 3.10+ conseillé. Les dépendances principales sont `pandas`, `numpy`, `requests`, `matplotlib` et `optuna`.
 
+## Sources de données
+- **Prix BTC** : Yahoo Finance via [`yfinance`](https://pypi.org/project/yfinance/) (`BTC-USD`, daily close). Un accès réseau est requis pour charger l'historique.
+- **Fear & Greed Index** : `https://api.alternative.me/fng/` (timestamps UNIX). Chargé automatiquement par le code.
+
+## Commandes clés
+Vérifier que les données sont cohérentes et générer des graphiques :
 ```bash
-python3 test_strategy.py
+# Contrôle des données BTC depuis 2013 (connexion Yahoo Finance requise)
+python scripts/check_data.py --start 2013-01-01 --plot outputs/btc_prices.png
+
+# Tracer le Rainbow Chart v2 prolongé jusqu'à 2025
+python scripts/rainbow_chart_v2.py --start 2013-01-01 --extend-to 2025-12-31 --out outputs/rainbow_v2.png
 ```
 
-Cela teste la stratégie avec des données synthétiques et affiche:
-- ✅ Validation de la logique
-- 📊 Métriques de performance
-- 🔍 Comparaison avec Buy & Hold
-
-## 🔍 Optimisation (trouver les meilleurs paramètres)
-
-### Lancement interactif
-
+Tester la logique stratégique sur des données synthétiques :
 ```bash
-python3 run_optimization.py
+python test_strategy.py
 ```
 
-Le script vous guide pas à pas:
-1. **Chargement des données** (Fear & Greed + Prix BTC)
-2. **Choix de la méthode**:
-   - Grid Search (teste toutes les combinaisons)
-   - Optuna (plus rapide, intelligent)
-   - Test rapide (config par défaut)
-3. **Résultats**:
-   - Top 10 meilleures configs
-   - Performance détaillée
-   - Fichiers CSV sauvegardés
-
-### Exemple de sortie
-
-```
-🏆 MEILLEURE CONFIGURATION
-================================================================================
-
-Paramètres:
-   FNG Buy Threshold:     25
-   FNG Sell Threshold:    75
-   Rainbow Buy Threshold: 0.30
-   Rainbow Sell Threshold:0.70
-   Min Position Change:   10%
-
-Performance (Walk-Forward CV):
-   Score:             1.25x vs B&H
-   Equity Finale:     18.21x
-   CAGR:              52.3%
-   Max Drawdown:      -35.2%
-   Sharpe Ratio:      1.82
-   Trades/an:         12.3
-```
-
-## 📁 Structure du code
-
-### Fichiers principaux
-
-```
-src/fngbt/
-├── data.py          # Chargement FNG et prix BTC
-├── strategy.py      # Logique de la stratégie (CŒUR)
-├── backtest.py      # Simulation avec frais
-├── optimize.py      # Walk-forward + Grid/Optuna
-└── metrics.py       # Calcul CAGR, Sharpe, etc.
-
-run_optimization.py  # Script principal
-test_strategy.py     # Tests avec données synthétiques
-```
-
-### Code simplifié et clair
-
-Le code a été **entièrement refactorisé** pour être:
-- ✅ **Simple**: chaque fonction fait UNE chose
-- ✅ **Clair**: noms explicites, commentaires en français
-- ✅ **Correct**: logique investisseur long terme respectée
-- ✅ **Testable**: facile à comprendre et débugger
-
-## 🎯 Paramètres à optimiser
-
-| Paramètre | Description | Plage typique |
-|-----------|-------------|---------------|
-| `fng_buy_threshold` | Seuil FNG pour acheter (FEAR) | 15-35 |
-| `fng_sell_threshold` | Seuil FNG pour vendre (GREED) | 65-85 |
-| `rainbow_buy_threshold` | Position Rainbow pour acheter | 0.2-0.4 |
-| `rainbow_sell_threshold` | Position Rainbow pour vendre | 0.6-0.8 |
-| `min_position_change_pct` | Changement min pour trader | 5-20% |
-
-## 📈 Walk-Forward Analysis
-
-Pour éviter l'**overfitting**, l'optimisation utilise un Walk-Forward:
-
-```
-Période 1: ████████░░░░  60% train → 40% test
-Période 2:    ████████░░░░  60% train → 40% test
-Période 3:       ████████░░░░  60% train → 40% test
-...
-```
-
-Le **score final** est la **médiane** des performances sur tous les folds de test.
-
-## 🎓 Comprendre les résultats
-
-### Métriques importantes
-
-- **Score**: Ratio Equity finale / Buy&Hold (> 1.0 = on bat le B&H)
-- **CAGR**: Rendement annualisé composé
-- **Max Drawdown**: Perte maximale depuis le sommet
-- **Sharpe Ratio**: Rendement ajusté au risque (> 1.0 = bon)
-- **Trades/an**: Fréquence de trading (10-50 = raisonnable)
-
-### ⚠️ Attention à l'overfitting !
-
-Si les meilleurs paramètres donnent:
-- ✅ Performance stable sur tous les folds → BON
-- ❌ Performance folle sur un fold, nulle sur les autres → OVERFITTING
-
-**Toujours vérifier** que les paramètres ont du **sens économique**:
-- Acheter en FEAR + prix bas = ✅ logique
-- Vendre en GREED + prix haut = ✅ logique
-- Paramètres bizarres (ex: acheter à 99 FNG) = ❌ suspect
-
-## 🔧 Personnalisation
-
-### Modifier l'espace de recherche
-
-Éditez `run_optimization.py` ligne 47:
-
-```python
-search_space = {
-    "fng_buy_threshold": [10, 15, 20, 25, 30],  # Vos valeurs
-    "fng_sell_threshold": [70, 75, 80, 85, 90],
-    "rainbow_buy_threshold": [0.2, 0.3, 0.4],
-    "rainbow_sell_threshold": [0.6, 0.7, 0.8],
-    "min_position_change_pct": [5.0, 10.0, 15.0],
-}
-```
-
-### Modifier les frais de transaction
-
-Ligne 79:
-```python
-fees_bps = 10.0  # 10 basis points = 0.1%
-```
-
-### Modifier le Walk-Forward
-
-Lignes 81-83:
-```python
-wf_n_folds = 5          # Nombre de périodes
-wf_train_ratio = 0.6    # 60% train, 40% test
-```
-
-## 📚 Exemple d'utilisation en code
-
-```python
-from src.fngbt.data import load_fng_alt, load_btc_prices, merge_daily
-from src.fngbt.strategy import StrategyConfig, build_signals
-from src.fngbt.backtest import run_backtest
-
-# Chargement des données
-fng = load_fng_alt()
-btc = load_btc_prices()
-df = merge_daily(fng, btc)
-
-# Configuration
-cfg = StrategyConfig(
-    fng_buy_threshold=25,
-    fng_sell_threshold=75,
-    rainbow_buy_threshold=0.3,
-    rainbow_sell_threshold=0.7,
-    min_position_change_pct=10.0
-)
-
-# Génération des signaux
-signals = build_signals(df, cfg)
-
-# Backtest
-result = run_backtest(signals, fees_bps=10.0)
-print(result["metrics"])
-```
-
-## 🐛 Debug / Problèmes
-
-### "ModuleNotFoundError: No module named 'yfinance'"
-
+Lancer une optimisation interactive :
 ```bash
-# Essayez d'installer sans build isolation
-pip install --no-build-isolation yfinance
-
-# Ou utilisez des données locales
+python run_optimization.py
 ```
 
-### "ValueError: Pas assez de données"
+## Utilisation détaillée
+### `scripts/check_data.py`
+- Objet : vérifier la continuité des prix BTC (doublons, jours manquants, gaps) et optionnellement sauvegarder un graphique.
+- Options principales :
+  - `--start YYYY-MM-DD` : début de la période (défaut : 2013-01-01)
+  - `--end YYYY-MM-DD` : fin de la période (inclus)
+  - `--plot chemin.png` : enregistre le graphique des prix
 
-Il faut au moins 100 jours de données. Vérifiez que:
-- Le FNG API est accessible
-- Les dates correspondent
+### `scripts/rainbow_chart_v2.py`
+- Objet : construire le Rainbow Chart v2 (régression log + bandes de quantiles) et l'étendre jusqu'à une date future.
+- Options principales :
+  - `--start YYYY-MM-DD` : première date de prix utilisée (défaut : 2013-01-01)
+  - `--end YYYY-MM-DD` : dernière date réelle à charger
+  - `--extend-to YYYY-MM-DD` : projection du Rainbow (défaut : 2025-12-31)
+  - `--out chemin.png` : destination du graphique (défaut : `outputs/rainbow_v2.png`)
 
-### Les résultats sont bizarres
+### `run_optimization.py`
+- Objet : optimisation interactive des paramètres FNG/Rainbow (Grid Search ou Optuna) avec walk-forward.
+- Fonctionnement :
+  1. Télécharge les données FNG et BTC depuis les sources en ligne.
+  2. Propose plusieurs méthodes : grid exhaustif, Optuna ou test rapide.
+  3. Affiche les meilleures configurations, métriques et sauvegarde les résultats en CSV.
+- Paramètres par défaut : voir le dictionnaire `search_space` dans le script pour ajuster les bornes.
 
-1. Vérifiez que la logique est correcte avec `python3 test_strategy.py`
-2. Regardez les colonnes `fng_buy_score` et `rainbow_buy_score` dans le backtest
-3. Vérifiez que `execute_next_day=True` (évite look-ahead bias)
+### `test_strategy.py`
+- Objet : scénario de test synthétique pour valider la logique (signaux, frais, exécution T+1).
+- Sortie : assertions + métriques de contrôle pour détecter les régressions.
 
-## 💡 Conseils
+## Personnalisation
+- **Espace de recherche** : modifiez `search_space` dans `run_optimization.py` pour ajouter vos propres seuils.
+- **Frais de transaction** : ajustez `fees_bps` (basis points) dans `run_optimization.py`.
+- **Agrégation hebdo** : la fonction `to_weekly` dans `src/fngbt/data.py` permet de resampler les données en hebdomadaire (`mean` ou `last`).
+- **Rainbow Chart** : dans `scripts/rainbow_chart_v2.py`, changez la liste des quantiles dans `build_rainbow_v2` si vous souhaitez d'autres bandes.
 
-1. **Commencez petit**: testez d'abord avec la config par défaut
-2. **Visualisez**: ajoutez des graphiques pour comprendre les signaux
-3. **Soyez sceptique**: si c'est trop beau, c'est suspect
-4. **Testez live**: paper trading avant de risquer de l'argent réel
-5. **Diversifiez**: ne mettez JAMAIS tous vos œufs dans un panier
+## Conseils & dépannage
+- Yahoo Finance peut limiter ou refuser certaines requêtes. En cas d'erreur « Aucune donnée renvoyée » ou d'absence d'Internet, relancez plus tard ou vérifiez votre connexion.
+- Assurez-vous d'avoir au moins ~100 jours de données pour les backtests.
+- Si un script échoue par manque de dépendance, relancez `pip install -r requirements.txt` dans votre environnement actif.
 
-## 📄 Licence
-
-Code libre, utilisez à vos risques et périls. Pas de conseil en investissement !
-
----
-
-**Note**: Ce code est à des fins éducatives. Le trading de cryptomonnaies est risqué. Faites vos propres recherches (DYOR).
+## Avertissement
+Ce projet est fourni à des fins éducatives. Aucune recommandation financière n'est fournie. Le trading de cryptomonnaies comporte des risques importants : faites vos propres recherches et n'investissez que ce que vous pouvez vous permettre de perdre.
