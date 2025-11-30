@@ -171,7 +171,11 @@ def calculate_allocation(df: pd.DataFrame, cfg: StrategyConfig) -> pd.DataFrame:
 
 def _quantize_bands(rainbow_pos: pd.Series, band_count: int) -> tuple[pd.Series, pd.Series]:
     band_edges = np.linspace(0, 1, band_count + 1)
-    band_ids = np.digitize(rainbow_pos.clip(0.0, 1.0), band_edges[1:-1], right=False)
+    band_ids = pd.Series(
+        np.digitize(rainbow_pos.clip(0.0, 1.0), band_edges[1:-1], right=False),
+        index=rainbow_pos.index,
+        dtype=int,
+    )
     labels = [
         "🔥 Fortement survendu",
         "Survendu",
