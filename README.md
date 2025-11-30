@@ -7,6 +7,7 @@ Outils pour analyser une stratégie long-terme Bitcoin basée sur le **Fear & Gr
 - [Sources de données](#sources-de-données)
 - [Commandes clés](#commandes-clés)
 - [Utilisation détaillée](#utilisation-détaillée)
+- [Visuels & métriques Rainbow](#visuels--métriques-rainbow)
 - [Personnalisation](#personnalisation)
 - [Conseils & dépannage](#conseils--dépannage)
 - [Avertissement](#avertissement)
@@ -44,6 +45,12 @@ Lancer une optimisation interactive :
 python run_optimization.py
 ```
 
+Lancer l'optimisation 100% Rainbow (grid ou Optuna) avec capital initial de 100 € et frais à 0,1 % :
+```bash
+PYTHONPATH=src python scripts/rainbow_only_optimize.py --search optuna --n-trials 150 \
+    --fees-bps 10 --initial-capital 100 --out outputs/rainbow_only_results.csv
+```
+
 ## Utilisation détaillée
 ### `scripts/check_data.py`
 - Objet : vérifier la continuité des prix BTC (doublons, jours manquants, gaps) et optionnellement sauvegarder un graphique.
@@ -71,6 +78,26 @@ python run_optimization.py
 ### `test_strategy.py`
 - Objet : scénario de test synthétique pour valider la logique (signaux, frais, exécution T+1).
 - Sortie : assertions + métriques de contrôle pour détecter les régressions.
+
+### `scripts/rainbow_only_optimize.py`
+- Objet : chercher automatiquement la meilleure stratégie basée uniquement sur le Rainbow Chart (pas de FNG).
+- Méthodes : Grid Search exhaustif ou Optuna (TPE) avec cross-validation walk-forward.
+- Entrées clés : bornes de search space via `fngbt.optimize.rainbow_only_search_space`, frais (`--fees-bps`), capital de départ (`--initial-capital`), nombre de folds walk-forward.
+- Sorties :
+  - `outputs/rainbow_only_results.csv` classé par score décroissant.
+  - Résumé console de la meilleure config (seuils d'achat/vente, allocations, exécution J+1) et backtest complet associé.
+
+## Visuels & métriques Rainbow
+- **Rainbow Chart v2** : `scripts/rainbow_chart_v2.py` génère `outputs/rainbow_v2.png`, avec la régression log et des bandes régulièrement espacées entre le quantile bas et le pic historique pour que la bande supérieure colle aux sommets.
+- **Graphiques de stratégie** : la CLI `scripts/check_data.py --plot ...` et le backtest affichent les courbes d'equity (stratégie vs buy & hold) ainsi que les positions dérivées des bandes Rainbow.
+- **Métriques disponibles** (issues de `src/fngbt/metrics.py` et du backtest) :
+  - `EquityFinal` / `EquityFinalValue` (multiple et valeur en euros selon le capital initial)
+  - `BHEquityFinal` / `BHEquityFinalValue` (buy & hold)
+  - `CAGR`, `BHCAGR`, `Vol`, `BHVol`
+  - `MaxDD`, `BHMaxDD`
+  - `Sharpe`, `Sortino`, `Calmar`
+  - `trades`, `trades_per_year`, `turnover_total`, `avg_allocation`
+- **Diagnostics Rainbow** : la fonction `build_rainbow_only_signals` (voir `src/fngbt/strategy.py`) retourne pour chaque jour la bande touchée, le score de distance au centre des bandes et l'allocation cible, facilitant l'analyse de vélocité de bande et de timing d'entrée/sortie.
 
 ## Personnalisation
 - **Espace de recherche** : modifiez `search_space` dans `run_optimization.py` pour ajouter vos propres seuils.
