@@ -53,6 +53,18 @@ def parse_args():
         default="outputs/rainbow_only_equity.png",
         help="Fichier image pour le graphe stratégie vs B&H.",
     )
+    p.add_argument(
+        "--plot-allocation",
+        type=str,
+        default="outputs/rainbow_only_allocation.png",
+        help="Fichier image pour allocation (%) superposée au prix BTC.",
+    )
+    p.add_argument(
+        "--plot-trades",
+        type=str,
+        default="outputs/rainbow_only_trades.png",
+        help="Fichier image pour le prix BTC avec marqueurs achats/ventes.",
+    )
     return p.parse_args()
 
 
@@ -203,6 +215,55 @@ def main():
         plt.tight_layout()
         plt.savefig(out_plot, dpi=150)
         print(f"\n🖼️ Graphe sauvegardé -> {out_plot}")
+
+    if args.plot_allocation:
+        out_plot_alloc = Path(args.plot_allocation)
+        out_plot_alloc.parent.mkdir(parents=True, exist_ok=True)
+
+        d = backtest["df"].copy()
+        fig, ax_price = plt.subplots(figsize=(11, 6))
+        ax_alloc = ax_price.twinx()
+
+        ax_price.plot(d["date"], d["close"], color="#2ca02c", label="BTC")
+        ax_price.set_yscale("log")
+        ax_price.set_ylabel("Prix BTC (log)")
+        ax_price.set_xlabel("Date")
+
+        ax_alloc.plot(d["date"], d["pos"], color="#1f77b4", alpha=0.8, label="Allocation (%)")
+        ax_alloc.set_ylabel("Allocation (%)")
+        ax_alloc.set_ylim(0, max(100, d["pos"].max() * 1.05))
+
+        lines, labels = ax_price.get_legend_handles_labels()
+        lines2, labels2 = ax_alloc.get_legend_handles_labels()
+        ax_price.legend(lines + lines2, labels + labels2, loc="upper left")
+
+        fig.suptitle("Allocation Rainbow vs Prix BTC")
+        ax_price.grid(alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(out_plot_alloc, dpi=150)
+        print(f"🖼️ Graphe allocation sauvegardé -> {out_plot_alloc}")
+
+    if args.plot_trades:
+        out_plot_trades = Path(args.plot_trades)
+        out_plot_trades.parent.mkdir(parents=True, exist_ok=True)
+
+        d = backtest["df"].copy()
+        buys = d[d["pos_change"] > 0.01]
+        sells = d[d["pos_change"] < -0.01]
+
+        plt.figure(figsize=(11, 6))
+        plt.plot(d["date"], d["close"], color="#2ca02c", label="BTC")
+        plt.scatter(buys["date"], buys["close"], color="green", marker="^", label="Achat", alpha=0.8)
+        plt.scatter(sells["date"], sells["close"], color="red", marker="v", label="Vente", alpha=0.8)
+        plt.yscale("log")
+        plt.xlabel("Date")
+        plt.ylabel("Prix BTC (log)")
+        plt.title("Points d'achat/vente de la stratégie Rainbow")
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(out_plot_trades, dpi=150)
+        print(f"🖼️ Graphe trades sauvegardé -> {out_plot_trades}")
 
 
 if __name__ == "__main__":

@@ -91,10 +91,14 @@ BHEquityFinal`. Vous pouvez aussi décourager les stratégies trop actives via `
 - Sorties :
   - `outputs/rainbow_only_results.csv` classé par score décroissant.
   - Résumé console de la meilleure config (seuils d'achat/vente, allocations, exécution J+1) et backtest complet associé.
+  - Graphiques optionnels via `--plot` (equity vs B&H), `--plot-allocation` (allocation superposée au prix BTC) et `--plot-trades` (prix BTC avec marqueurs achats/ventes).
 
 ## Visuels & métriques Rainbow
 - **Rainbow Chart v2** : `scripts/rainbow_chart_v2.py` génère `outputs/rainbow_v2.png`, avec la régression log et des bandes régulièrement espacées entre le quantile bas et le pic historique pour que la bande supérieure colle aux sommets.
-- **Graphiques de stratégie** : la CLI `scripts/check_data.py --plot ...` et le backtest affichent les courbes d'equity (stratégie vs buy & hold) ainsi que les positions dérivées des bandes Rainbow. L'optimiseur Rainbow-only peut aussi sauvegarder un graphe stratégie vs B&H via `--plot outputs/rainbow_only_equity.png`.
+- **Graphiques de stratégie** : la CLI `scripts/check_data.py --plot ...` et le backtest affichent les courbes d'equity (stratégie vs buy & hold) ainsi que les positions dérivées des bandes Rainbow. L'optimiseur Rainbow-only peut aussi sauvegarder :
+  - un graphe stratégie vs B&H via `--plot outputs/rainbow_only_equity.png` ;
+  - un graphe allocation (%) superposé au prix BTC via `--plot-allocation outputs/rainbow_only_allocation.png` ;
+  - un graphe prix BTC avec marqueurs achats (verts) et ventes (rouges) via `--plot-trades outputs/rainbow_only_trades.png`.
 - **Métriques disponibles** (issues de `src/fngbt/metrics.py` et du backtest) :
   - `EquityFinal` / `EquityFinalValue` (multiple et valeur en euros selon le capital initial)
   - `BHEquityFinal` / `BHEquityFinalValue` (buy & hold)
