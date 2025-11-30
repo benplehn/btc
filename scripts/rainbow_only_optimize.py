@@ -17,7 +17,6 @@ from fngbt.data import load_btc_prices
 from fngbt.optimize import (
     optuna_search_rainbow_only,
     grid_search_rainbow_only,
-    rainbow_only_search_space,
 )
 from fngbt.strategy import RainbowOnlyConfig, build_rainbow_only_signals
 from fngbt.backtest import run_backtest
@@ -29,6 +28,25 @@ def parse_args():
     p.add_argument("--end", type=str, default=None, help="Fin des prix BTC (YYYY-MM-DD).")
     p.add_argument("--search", choices=["grid", "optuna"], default="optuna", help="Méthode d'optimisation.")
     p.add_argument("--n-trials", type=int, default=150, help="Nb de trials Optuna (si search=optuna).")
+    p.add_argument("--rainbow-buy-min", type=float, default=0.05, help="Seuil Rainbow achat (min, inclus).")
+    p.add_argument("--rainbow-buy-max", type=float, default=0.30, help="Seuil Rainbow achat (max, inclus).")
+    p.add_argument("--rainbow-buy-step", type=float, default=0.05, help="Pas pour le seuil d'achat Rainbow.")
+    p.add_argument("--rainbow-sell-min", type=float, default=0.55, help="Seuil Rainbow vente (min, inclus).")
+    p.add_argument("--rainbow-sell-max", type=float, default=0.85, help="Seuil Rainbow vente (max, inclus).")
+    p.add_argument("--rainbow-sell-step", type=float, default=0.05, help="Pas pour le seuil de vente Rainbow.")
+    p.add_argument("--power-min", type=float, default=0.8, help="Puissance d'allocation (min, inclus).")
+    p.add_argument("--power-max", type=float, default=1.8, help="Puissance d'allocation (max, inclus).")
+    p.add_argument("--power-step", type=float, default=0.2, help="Pas pour la puissance d'allocation.")
+    p.add_argument("--max-alloc-min", type=int, default=75, help="Allocation max (%) min, inclus.")
+    p.add_argument("--max-alloc-max", type=int, default=100, help="Allocation max (%) max, inclus.")
+    p.add_argument("--max-alloc-step", type=int, default=25, help="Pas allocation max (en points).")
+    p.add_argument("--min-alloc-min", type=int, default=0, help="Allocation min (%) min, inclus.")
+    p.add_argument("--min-alloc-max", type=int, default=30, help="Allocation min (%) max, inclus.")
+    p.add_argument("--min-alloc-step", type=int, default=10, help="Pas allocation min (en points).")
+    p.add_argument("--min-pos-change-min", type=float, default=2.5, help="Variation min de position (min).")
+    p.add_argument("--min-pos-change-max", type=float, default=15.0, help="Variation min de position (max).")
+    p.add_argument("--min-pos-change-step", type=float, default=2.5, help="Pas variation min de position.")
+    p.add_argument("--band-counts", type=str, default="8", help="Liste de bandes (ex: '8,10').")
     p.add_argument("--fees-bps", type=float, default=10.0, help="Frais de transaction en bps (0.1% = 10 bps).")
     p.add_argument("--initial-capital", type=float, default=100.0, help="Capital de départ en euros.")
     p.add_argument("--min-trades-per-year", type=float, default=0.5, help="Filtre trades/an minimum.")
@@ -68,6 +86,32 @@ def parse_args():
     return p.parse_args()
 
 
+def _frange(start: float, end: float, step: float) -> list[float]:
+    values = []
+    current = start
+    while current <= end + 1e-12:
+        values.append(round(current, 6))
+        current += step
+    return values
+
+
+def _build_search_space(args: argparse.Namespace):
+    def _int_range(start: int, end: int, step: int) -> list[int]:
+        return list(range(start, end + step, step))
+
+    band_counts = [int(x) for x in args.band_counts.split(",") if x.strip()]
+    return {
+        "rainbow_buy_threshold": _frange(args.rainbow_buy_min, args.rainbow_buy_max, args.rainbow_buy_step),
+        "rainbow_sell_threshold": _frange(args.rainbow_sell_min, args.rainbow_sell_max, args.rainbow_sell_step),
+        "allocation_power": _frange(args.power_min, args.power_max, args.power_step),
+        "max_allocation_pct": _int_range(args.max_alloc_min, args.max_alloc_max, args.max_alloc_step),
+        "min_allocation_pct": _int_range(args.min_alloc_min, args.min_alloc_max, args.min_alloc_step),
+        "min_position_change_pct": _frange(args.min_pos_change_min, args.min_pos_change_max, args.min_pos_change_step),
+        "execute_next_day": [True],
+        "band_count": band_counts or [8],
+    }
+
+
 def main():
     args = parse_args()
 
@@ -79,7 +123,7 @@ def main():
     px = load_btc_prices(start=args.start, end=args.end)
     print(f"Données BTC chargées: {len(px)} jours du {px['date'].min().date()} au {px['date'].max().date()}")
 
-    search_space = rainbow_only_search_space()
+    search_space = _build_search_space(args)
 
     if args.search == "grid":
         results_df = grid_search_rainbow_only(

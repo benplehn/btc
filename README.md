@@ -54,7 +54,16 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search optuna --n-trial
 Pour viser un « meilleur prix final » selon votre critère, ajoutez par exemple `--objective equity_value` (maximiser la valeur
 euros finale) ou `--objective calmar` (rendement ajusté du drawdown). Le score par défaut reste le ratio `EquityFinal /
 BHEquityFinal`. Vous pouvez aussi décourager les stratégies trop actives via `--turnover-penalty 0.01` (pénalité de 0,01 par
-100 % de turnover cumulé).
+100 % de turnover cumulé). Pour déclencher un grid search avec des pas explicites plutôt que TPE/Optuna :
+```bash
+PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
+    --rainbow-buy-min 0.05 --rainbow-buy-max 0.30 --rainbow-buy-step 0.05 \
+    --rainbow-sell-min 0.55 --rainbow-sell-max 0.85 --rainbow-sell-step 0.05 \
+    --power-min 0.8 --power-max 1.8 --power-step 0.2 \
+    --max-alloc-min 75 --max-alloc-max 100 --max-alloc-step 25 \
+    --min-alloc-min 0 --min-alloc-max 30 --min-alloc-step 10 \
+    --min-pos-change-min 2.5 --min-pos-change-max 15 --min-pos-change-step 2.5
+```
 
 ## Utilisation détaillée
 ### `scripts/check_data.py`
@@ -87,7 +96,7 @@ BHEquityFinal`. Vous pouvez aussi décourager les stratégies trop actives via `
 ### `scripts/rainbow_only_optimize.py`
 - Objet : chercher automatiquement la meilleure stratégie basée uniquement sur le Rainbow Chart (pas de FNG).
 - Méthodes : Grid Search exhaustif ou Optuna (TPE) avec cross-validation walk-forward.
-- Entrées clés : bornes de search space via `fngbt.optimize.rainbow_only_search_space`, frais (`--fees-bps`), capital de départ (`--initial-capital`), nombre de folds walk-forward, objectif de score (`--objective`) et pénalité d'activité (`--turnover-penalty`).
+- Entrées clés : bornes de search space fournies en CLI (min/max/pas des seuils Rainbow, puissance d'allocation, allocations min/max, variation minimale, liste des bandes), frais (`--fees-bps`), capital de départ (`--initial-capital`), nombre de folds walk-forward, objectif de score (`--objective`) et pénalité d'activité (`--turnover-penalty`).
 - Sorties :
   - `outputs/rainbow_only_results.csv` classé par score décroissant.
   - Résumé console de la meilleure config (seuils d'achat/vente, allocations, exécution J+1) et backtest complet associé.

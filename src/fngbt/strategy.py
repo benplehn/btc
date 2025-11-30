@@ -220,7 +220,8 @@ def build_rainbow_only_signals(df: pd.DataFrame, cfg: RainbowOnlyConfig) -> pd.D
     pos_filtered = []
     current_pos = 0.0
     for target in allocation_pct:
-        if abs(target - current_pos) >= cfg.min_position_change_pct:
+        at_extreme = target <= cfg.min_allocation_pct + 1e-9 or target >= cfg.max_allocation_pct - 1e-9
+        if at_extreme or abs(target - current_pos) >= cfg.min_position_change_pct:
             current_pos = target
         pos_filtered.append(current_pos)
 
