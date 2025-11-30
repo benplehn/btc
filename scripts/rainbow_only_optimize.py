@@ -9,6 +9,8 @@ import os
 import sys
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from fngbt.data import load_btc_prices
@@ -45,6 +47,12 @@ def parse_args():
         help="Pénalité par unité de turnover (ex: 0.01 réduit le score de 0.01 par changement de 100%).",
     )
     p.add_argument("--out", type=str, default="outputs/rainbow_only_results.csv", help="Fichier CSV de sortie.")
+    p.add_argument(
+        "--plot",
+        type=str,
+        default="outputs/rainbow_only_equity.png",
+        help="Fichier image pour le graphe stratégie vs B&H.",
+    )
     return p.parse_args()
 
 
@@ -127,6 +135,10 @@ def main():
         "cv_rainbow_time_in_sell_zone",
         "cv_rainbow_band_velocity",
         "cv_rainbow_band_cross_per_year",
+        "cv_rainbow_pos_velocity",
+        "cv_rainbow_pos_up_speed",
+        "cv_rainbow_pos_down_speed",
+        "cv_rainbow_pos_drift",
     ]:
         if k in best:
             val = best[k]
@@ -168,6 +180,29 @@ def main():
                 print(f"   {key}: {val:.4f}")
             else:
                 print(f"   {key}: {val}")
+
+    bh_ratio = metrics.get("EquityFinal", 0.0) / max(metrics.get("BHEquityFinal", 1.0), 1e-12)
+    print(f"   Ratio vs Buy & Hold: {bh_ratio:.3f}x")
+
+    if args.plot:
+        out_plot = Path(args.plot)
+        out_plot.parent.mkdir(parents=True, exist_ok=True)
+        d = backtest["df"].copy()
+        eq_val = d["equity"] * args.initial_capital
+        bh_val = d["bh_equity"] * args.initial_capital
+
+        plt.figure(figsize=(11, 6))
+        plt.plot(d["date"], eq_val, label="Stratégie Rainbow", color="#1f77b4")
+        plt.plot(d["date"], bh_val, label="Buy & Hold", color="#ff7f0e", linestyle="--")
+        plt.yscale("log")
+        plt.title("Equity: Rainbow-only vs Buy & Hold")
+        plt.xlabel("Date")
+        plt.ylabel("Valeur du portefeuille (€)")
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(out_plot, dpi=150)
+        print(f"\n🖼️ Graphe sauvegardé -> {out_plot}")
 
 
 if __name__ == "__main__":

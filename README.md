@@ -94,7 +94,7 @@ BHEquityFinal`. Vous pouvez aussi décourager les stratégies trop actives via `
 
 ## Visuels & métriques Rainbow
 - **Rainbow Chart v2** : `scripts/rainbow_chart_v2.py` génère `outputs/rainbow_v2.png`, avec la régression log et des bandes régulièrement espacées entre le quantile bas et le pic historique pour que la bande supérieure colle aux sommets.
-- **Graphiques de stratégie** : la CLI `scripts/check_data.py --plot ...` et le backtest affichent les courbes d'equity (stratégie vs buy & hold) ainsi que les positions dérivées des bandes Rainbow.
+- **Graphiques de stratégie** : la CLI `scripts/check_data.py --plot ...` et le backtest affichent les courbes d'equity (stratégie vs buy & hold) ainsi que les positions dérivées des bandes Rainbow. L'optimiseur Rainbow-only peut aussi sauvegarder un graphe stratégie vs B&H via `--plot outputs/rainbow_only_equity.png`.
 - **Métriques disponibles** (issues de `src/fngbt/metrics.py` et du backtest) :
   - `EquityFinal` / `EquityFinalValue` (multiple et valeur en euros selon le capital initial)
   - `BHEquityFinal` / `BHEquityFinalValue` (buy & hold)
@@ -103,7 +103,7 @@ BHEquityFinal`. Vous pouvez aussi décourager les stratégies trop actives via `
   - `Sharpe`, `Sortino`, `Calmar`
   - `trades`, `trades_per_year`, `turnover_total`, `avg_allocation`
   - Diagnostics Rainbow pour tester les « paliers » et la vélocité : `rainbow_pos_mean/median/std`, temps passé sous le seuil d'achat ou au-dessus du seuil de vente, vitesse moyenne de changement de bande (`rainbow_band_velocity`) et franchissements de bande annualisés (`rainbow_band_cross_per_year`).
-- **Diagnostics Rainbow** : la fonction `build_rainbow_only_signals` (voir `src/fngbt/strategy.py`) retourne pour chaque jour la bande touchée, le score de distance au centre des bandes et l'allocation cible, facilitant l'analyse de vélocité de bande, d'agressivité progressive via `allocation_power` et de timing d'entrée/sortie.
+- **Diagnostics Rainbow** : la fonction `build_rainbow_only_signals` (voir `src/fngbt/strategy.py`) retourne pour chaque jour la bande touchée, le score de distance au centre des bandes et l'allocation cible, facilitant l'analyse de vélocité de bande, d'agressivité progressive via `allocation_power` et de timing d'entrée/sortie. Les métriques calculées dans l'optimisation incluent désormais les vitesses de montée/descente (`rainbow_pos_up_speed` / `rainbow_pos_down_speed`), la dérive quotidienne (`rainbow_pos_drift`) et la vélocité absolue (`rainbow_pos_velocity`) pour tester les « paliers » et les gradients de descente/relance.
 
 ## Personnalisation
 - **Espace de recherche** : modifiez `search_space` dans `run_optimization.py` pour ajouter vos propres seuils.

@@ -61,6 +61,12 @@ def _augment_with_rainbow_diagnostics(
         metrics["rainbow_pos_median"] = float(pos.median())
         metrics["rainbow_pos_std"] = float(pos.std())
 
+        pos_diff = pos.diff().fillna(0.0)
+        metrics["rainbow_pos_velocity"] = float(pos_diff.abs().mean())
+        metrics["rainbow_pos_drift"] = float(pos_diff.mean())
+        metrics["rainbow_pos_up_speed"] = float(pos_diff[pos_diff > 0].mean() or 0.0)
+        metrics["rainbow_pos_down_speed"] = float(pos_diff[pos_diff < 0].abs().mean() or 0.0)
+
         if buy_threshold is not None:
             metrics["rainbow_time_in_buy_zone"] = float((pos <= buy_threshold).mean())
         if sell_threshold is not None:
