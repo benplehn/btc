@@ -5,7 +5,7 @@ Grid Search et Optuna pour trouver les meilleurs seuils FNG et Rainbow
 """
 from __future__ import annotations
 import itertools
-from typing import Callable, Dict, Iterable, List, Tuple, Optional
+from typing import Callable, Dict, Iterable, List, Tuple, Optional, Union
 import optuna
 import pandas as pd
 import numpy as np
@@ -77,7 +77,18 @@ def _augment_with_rainbow_diagnostics(
     return metrics
 
 
-def evaluate_config(df: pd.DataFrame, cfg: StrategyConfig, fees_bps: float, initial_capital: float = 100.0) -> Dict:
+ConfigType = Union[StrategyConfig, RainbowOnlyConfig]
+
+
+def _build_signals_for_cfg(df: pd.DataFrame, cfg: ConfigType) -> pd.DataFrame:
+    """Routes vers le bon constructeur de signaux selon le type de config."""
+
+    if isinstance(cfg, RainbowOnlyConfig):
+        return build_rainbow_only_signals(df, cfg)
+    return build_signals(df, cfg)
+
+
+def evaluate_config(df: pd.DataFrame, cfg: ConfigType, fees_bps: float, initial_capital: float = 100.0) -> Dict:
     """
     Évalue une configuration sur tout le dataset
 
@@ -85,7 +96,7 @@ def evaluate_config(df: pd.DataFrame, cfg: StrategyConfig, fees_bps: float, init
         dict avec 'metrics', 'df', 'config'
     """
     # Génération des signaux
-    signals_df = build_signals(df, cfg)
+    signals_df = _build_signals_for_cfg(df, cfg)
 
     # Backtest
     result = run_backtest(signals_df, fees_bps=fees_bps, initial_capital=initial_capital)
@@ -145,7 +156,7 @@ def score_result(
 
 def walk_forward_cv(
     df: pd.DataFrame,
-    cfg: StrategyConfig,
+    cfg: ConfigType,
     fees_bps: float,
     initial_capital: float = 100.0,
     n_folds: int = 5,
