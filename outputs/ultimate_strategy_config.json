@@ -1,0 +1,30 @@
+{
+  "name": "Triple Factor Strategy (FNG + Rainbow + S&P 500)",
+  "rainbow_threshold": 0.5,
+  "fng_threshold": 40,
+  "alloc_all_bullish": 100,
+  "alloc_2_bullish": 96,
+  "alloc_1_bullish": 90,
+  "alloc_all_bearish": 85,
+  "rules": {
+    "3_bullish": "100% (Rainbow cheap + FNG fear + S&P bullish)",
+    "2_bullish": "96% (2 conditions bullish sur 3)",
+    "1_bullish": "90% (1 condition bullish sur 3)",
+    "0_bullish": "85% (Tous bearish)"
+  },
+  "performance": {
+    "equity_final_eur": 11.460302933045886,
+    "gain_eur": -88.53969706695412,
+    "ratio_vs_bh": 1.8656978912003048,
+    "cagr_pct": 36.073608412029515,
+    "sharpe": 0.8550550450078688,
+    "max_dd_pct": -74.79730052462122,
+    "trades": 2719,
+    "fees_eur": 11.199748488053833
+  },
+  "oos_validation": {
+    "avg_test_ratio": 1.1000594186004615,
+    "avg_test_equity": 1.7769554072163576,
+    "windows_tested": 3
+  }
+}
