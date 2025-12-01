@@ -41,6 +41,7 @@ class RainbowOnlyConfig:
     rainbow_buy_threshold: float = 0.25
     rainbow_sell_threshold: float = 0.75
     allocation_power: float = 1.0  # >1 = agressif sur les extrêmes
+    sell_curve_power: float = 1.5  # Accentue la sortie proche des bandes hautes
     rainbow_top_decay: float = 0.0  # Décroissance annuelle de l'écart vers la bande haute
 
     max_allocation_pct: int = 100
@@ -216,7 +217,11 @@ def build_rainbow_only_signals(df: pd.DataFrame, cfg: RainbowOnlyConfig) -> pd.D
 
     span = cfg.rainbow_sell_threshold - cfg.rainbow_buy_threshold
     interp = ((cfg.rainbow_sell_threshold - rainbow_pos) / max(span, 1e-9)).clip(0.0, 1.0)
-    rainbow_score = interp ** cfg.allocation_power
+
+    # On vend plus vite dans la moitié supérieure grâce à une puissance dédiée
+    mid = cfg.rainbow_buy_threshold + span / 2
+    power = np.where(rainbow_pos >= mid, cfg.sell_curve_power, cfg.allocation_power)
+    rainbow_score = interp ** power
 
     allocation_pct = cfg.min_allocation_pct + rainbow_score * (cfg.max_allocation_pct - cfg.min_allocation_pct)
     allocation_pct = np.clip(allocation_pct, cfg.min_allocation_pct, cfg.max_allocation_pct)
