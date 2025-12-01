@@ -129,13 +129,14 @@ def evaluate_config(df: pd.DataFrame, cfg: ConfigType, fees_bps: float, initial_
 
 def score_result(
     metrics: Dict[str, float],
-    objective: str = "equity_ratio",
+    objective: str = "return_over_mdd",
     turnover_penalty: float = 0.0,
 ) -> float:
     """
     Score d'une configuration.
 
     objective:
+      - return_over_mdd (PnL total / |MaxDD|)
       - equity_ratio (EquityFinal / BHEquityFinal)
       - equity_final (EquityFinal)
       - equity_value (EquityFinalValue)
@@ -147,6 +148,7 @@ def score_result(
     equity_value = metrics.get("EquityFinalValue", equity_final)
 
     base_score = {
+        "return_over_mdd": metrics.get("ReturnOverMDD", 0.0),
         "equity_ratio": equity_final / max(bh_equity_final, 1e-12),
         "equity_final": equity_final,
         "equity_value": equity_value,
@@ -154,7 +156,7 @@ def score_result(
         "sharpe": metrics.get("Sharpe", 0.0),
         "sortino": metrics.get("Sortino", 0.0),
         "calmar": metrics.get("Calmar", 0.0),
-    }.get(objective, equity_final / max(bh_equity_final, 1e-12))
+    }.get(objective, metrics.get("ReturnOverMDD", equity_final / max(bh_equity_final, 1e-12)))
 
     penalty = turnover_penalty * metrics.get("turnover_total", 0.0)
     return float(base_score - penalty)
@@ -286,7 +288,7 @@ def grid_search(
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 1.0,
     initial_capital: float = 100.0,
-    objective: str = "equity_ratio",
+    objective: str = "return_over_mdd",
     turnover_penalty: float = 0.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
@@ -387,7 +389,7 @@ def optuna_search(
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 1.0,
     initial_capital: float = 100.0,
-    objective: str = "equity_ratio",
+    objective: str = "return_over_mdd",
     turnover_penalty: float = 0.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
@@ -560,7 +562,7 @@ def grid_search_rainbow_only(
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 0.5,
     initial_capital: float = 100.0,
-    objective: str = "equity_ratio",
+    objective: str = "return_over_mdd",
     turnover_penalty: float = 0.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:
@@ -638,7 +640,7 @@ def optuna_search_rainbow_only(
     wf_train_ratio: float = 0.6,
     min_trades_per_year: float = 0.5,
     initial_capital: float = 100.0,
-    objective: str = "equity_ratio",
+    objective: str = "return_over_mdd",
     turnover_penalty: float = 0.0,
     progress_cb: Optional[Callable[[int, int, Optional[float]], None]] = None,
 ) -> pd.DataFrame:

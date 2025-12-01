@@ -22,6 +22,8 @@ def compute_metrics(d: pd.DataFrame, initial_capital: float = 100.0) -> dict:
     dvol = neg.std()*np.sqrt(ANN)
     sortino = mean/(dvol + 1e-12)
     calmar = (cagr)/(abs(mdd)+1e-12)
+    total_return = eq.iloc[-1] - 1.0
+    return_over_mdd = total_return / (abs(mdd) + 1e-12)
     return {
         "EquityFinal": float(eq.iloc[-1]),
         "EquityFinalValue": float(eq.iloc[-1] * initial_capital),
@@ -36,5 +38,7 @@ def compute_metrics(d: pd.DataFrame, initial_capital: float = 100.0) -> dict:
         "Sharpe": float(sharpe),
         "Sortino": float(sortino),
         "Calmar": float(calmar),
+        "ReturnOverMDD": float(return_over_mdd),
+        "Return": float(total_return),
         "Days": int(n),
     }

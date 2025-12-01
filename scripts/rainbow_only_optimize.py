@@ -61,8 +61,17 @@ def parse_args():
     p.add_argument("--wf-train-ratio", type=float, default=0.6, help="Ratio train pour walk-forward.")
     p.add_argument(
         "--objective",
-        choices=["equity_ratio", "equity_final", "equity_value", "cagr", "sharpe", "sortino", "calmar"],
-        default="equity_ratio",
+        choices=[
+            "return_over_mdd",
+            "equity_ratio",
+            "equity_final",
+            "equity_value",
+            "cagr",
+            "sharpe",
+            "sortino",
+            "calmar",
+        ],
+        default="return_over_mdd",
         help="Métrique à maximiser pendant la recherche.",
     )
     p.add_argument(
@@ -195,7 +204,7 @@ def main():
             print(f"   {k}: {best[k]}")
 
     print("\nPerformance médiane walk-forward:")
-    for k in ["cv_EquityFinal", "cv_CAGR", "cv_MaxDD", "cv_Sharpe", "cv_trades_per_year"]:
+    for k in ["cv_EquityFinal", "cv_ReturnOverMDD", "cv_CAGR", "cv_MaxDD", "cv_Sharpe", "cv_trades_per_year"]:
         if k in best:
             val = best[k]
             print(f"   {k}: {val:.4f}" if isinstance(val, float) else f"   {k}: {val}")
@@ -239,6 +248,7 @@ def main():
     for key in [
         "EquityFinalValue",
         "EquityFinal",
+        "ReturnOverMDD",
         "CAGR",
         "MaxDD",
         "Sharpe",

@@ -51,10 +51,11 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search optuna --n-trial
     --fees-bps 10 --initial-capital 100 --out outputs/rainbow_only_results.csv
 ```
 
-Pour viser un « meilleur prix final » selon votre critère, ajoutez par exemple `--objective equity_value` (maximiser la valeur
-euros finale) ou `--objective calmar` (rendement ajusté du drawdown). Le score par défaut reste le ratio `EquityFinal /
-BHEquityFinal`. Vous pouvez aussi décourager les stratégies trop actives via `--turnover-penalty 0.01` (pénalité de 0,01 par
-100 % de turnover cumulé). Pour déclencher un grid search avec des pas explicites plutôt que TPE/Optuna :
+Par défaut l'optimisation maximise **`return_over_mdd` = PnL total / |MaxDD|** (Calmar non annualisé) pour équilibrer perfor
+mance et robustesse. Pour cibler un autre critère, ajoutez par exemple `--objective equity_value` (maximiser la valeur euros f
+inale) ou `--objective calmar` (rendement annualisé ajusté du drawdown). Vous pouvez aussi décourager les stratégies trop act
+ives via `--turnover-penalty 0.01` (pénalité de 0,01 par 100 % de turnover cumulé). Pour déclencher un grid search avec des pa
+s explicites plutôt que TPE/Optuna :
 ```bash
 PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
     --rainbow-buy-min 0.05 --rainbow-buy-max 0.30 --rainbow-buy-step 0.05 \
@@ -66,7 +67,7 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
     --min-pos-change-min 2.5 --min-pos-change-max 15 --min-pos-change-step 2.5 \
     --band-counts "8,10" \
     --fees-bps 10 --initial-capital 100 \
-    --objective equity_ratio --turnover-penalty 0.0 \
+    --objective return_over_mdd --turnover-penalty 0.0 \
     --wf-folds 5 --wf-train-ratio 0.6 \
     --plot outputs/rainbow_only_equity.png \
     --plot-allocation outputs/rainbow_only_allocation.png \
@@ -121,6 +122,7 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
 - **Métriques disponibles** (issues de `src/fngbt/metrics.py` et du backtest) :
   - `EquityFinal` / `EquityFinalValue` (multiple et valeur en euros selon le capital initial)
   - `BHEquityFinal` / `BHEquityFinalValue` (buy & hold)
+  - `ReturnOverMDD` (PnL total / |MaxDD|, Calmar non annualisé) et `Return` (PnL total)
   - `CAGR`, `BHCAGR`, `Vol`, `BHVol`
   - `MaxDD`, `BHMaxDD`
   - `Sharpe`, `Sortino`, `Calmar`
