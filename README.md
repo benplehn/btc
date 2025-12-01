@@ -59,6 +59,7 @@ BHEquityFinal`. Vous pouvez aussi décourager les stratégies trop actives via `
 PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
     --rainbow-buy-min 0.05 --rainbow-buy-max 0.30 --rainbow-buy-step 0.05 \
     --rainbow-sell-min 0.55 --rainbow-sell-max 0.85 --rainbow-sell-step 0.05 \
+    --top-decay-min 0.0 --top-decay-max 0.05 --top-decay-step 0.01 \
     --power-min 0.8 --power-max 1.8 --power-step 0.2 \
     --max-alloc-min 75 --max-alloc-max 100 --max-alloc-step 25 \
     --min-alloc-min 0 --min-alloc-max 30 --min-alloc-step 10 \
@@ -104,7 +105,7 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
 ### `scripts/rainbow_only_optimize.py`
 - Objet : chercher automatiquement la meilleure stratégie basée uniquement sur le Rainbow Chart (pas de FNG).
 - Méthodes : Grid Search exhaustif ou Optuna (TPE) avec cross-validation walk-forward.
-- Entrées clés : bornes de search space fournies en CLI (min/max/pas des seuils Rainbow, puissance d'allocation, allocations min/max, variation minimale, liste des bandes), frais (`--fees-bps`), capital de départ (`--initial-capital`), nombre de folds walk-forward, objectif de score (`--objective`) et pénalité d'activité (`--turnover-penalty`).
+- Entrées clés : bornes de search space fournies en CLI (min/max/pas des seuils Rainbow, puissance d'allocation, **décroissance annuelle de la bande haute** `--top-decay-*`, allocations min/max, variation minimale, liste des bandes), frais (`--fees-bps`), capital de départ (`--initial-capital`), nombre de folds walk-forward, objectif de score (`--objective`) et pénalité d'activité (`--turnover-penalty`).
 - Sorties :
   - `outputs/rainbow_only_results.csv` classé par score décroissant.
   - Résumé console de la meilleure config (seuils d'achat/vente, allocations, exécution J+1) et backtest complet associé.
@@ -126,6 +127,7 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
   - `trades`, `trades_per_year`, `turnover_total`, `avg_allocation`
   - Diagnostics Rainbow pour tester les « paliers » et la vélocité : `rainbow_pos_mean/median/std`, temps passé sous le seuil d'achat ou au-dessus du seuil de vente, vitesse moyenne de changement de bande (`rainbow_band_velocity`) et franchissements de bande annualisés (`rainbow_band_cross_per_year`).
 - **Diagnostics Rainbow** : la fonction `build_rainbow_only_signals` (voir `src/fngbt/strategy.py`) retourne pour chaque jour la bande touchée, le score de distance au centre des bandes et l'allocation cible, facilitant l'analyse de vélocité de bande, d'agressivité progressive via `allocation_power` et de timing d'entrée/sortie. Les métriques calculées dans l'optimisation incluent désormais les vitesses de montée/descente (`rainbow_pos_up_speed` / `rainbow_pos_down_speed`), la dérive quotidienne (`rainbow_pos_drift`) et la vélocité absolue (`rainbow_pos_velocity`) pour tester les « paliers » et les gradients de descente/relance.
+- **Bande haute qui se resserre dans le temps** : la position Rainbow peut appliquer un facteur de décroissance exponentielle sur l'écart vers la bande supérieure (`rainbow_top_decay`, en taux annuel). Ajoutez ce paramètre dans la recherche (par exemple `--top-decay-min 0.0 --top-decay-max 0.05 --top-decay-step 0.01`) pour laisser l'optimiseur calibrer le rétrécissement progressif lorsque le marché atteint moins souvent les sommets historiques.
 
 ## Personnalisation
 - **Espace de recherche** : modifiez `search_space` dans `run_optimization.py` pour ajouter vos propres seuils.

@@ -35,6 +35,9 @@ def parse_args():
     p.add_argument("--rainbow-sell-min", type=float, default=0.55, help="Seuil Rainbow vente (min, inclus).")
     p.add_argument("--rainbow-sell-max", type=float, default=0.85, help="Seuil Rainbow vente (max, inclus).")
     p.add_argument("--rainbow-sell-step", type=float, default=0.05, help="Pas pour le seuil de vente Rainbow.")
+    p.add_argument("--top-decay-min", type=float, default=0.0, help="Décroissance annuelle min de la bande haute.")
+    p.add_argument("--top-decay-max", type=float, default=0.05, help="Décroissance annuelle max de la bande haute.")
+    p.add_argument("--top-decay-step", type=float, default=0.01, help="Pas de décroissance annuelle.")
     p.add_argument("--power-min", type=float, default=0.8, help="Puissance d'allocation (min, inclus).")
     p.add_argument("--power-max", type=float, default=1.8, help="Puissance d'allocation (max, inclus).")
     p.add_argument("--power-step", type=float, default=0.2, help="Pas pour la puissance d'allocation.")
@@ -110,6 +113,7 @@ def _build_search_space(args: argparse.Namespace):
     return {
         "rainbow_buy_threshold": _frange(args.rainbow_buy_min, args.rainbow_buy_max, args.rainbow_buy_step),
         "rainbow_sell_threshold": _frange(args.rainbow_sell_min, args.rainbow_sell_max, args.rainbow_sell_step),
+        "rainbow_top_decay": _frange(args.top_decay_min, args.top_decay_max, args.top_decay_step),
         "allocation_power": _frange(args.power_min, args.power_max, args.power_step),
         "max_allocation_pct": _int_range(args.max_alloc_min, args.max_alloc_max, args.max_alloc_step),
         "min_allocation_pct": _int_range(args.min_alloc_min, args.min_alloc_max, args.min_alloc_step),
@@ -176,10 +180,11 @@ def main():
         "rainbow_sell_threshold",
         "allocation_power",
         "max_allocation_pct",
-        "min_allocation_pct",
-        "min_position_change_pct",
-        "execute_next_day",
-        "band_count",
+        "min_allocation_pct", 
+        "min_position_change_pct", 
+        "execute_next_day", 
+        "band_count", 
+        "rainbow_top_decay", 
     ]:
         if k in best:
             print(f"   {k}: {best[k]}")
@@ -216,6 +221,7 @@ def main():
         min_position_change_pct=float(best["min_position_change_pct"]),
         execute_next_day=bool(best["execute_next_day"]),
         band_count=int(best.get("band_count", 8)),
+        rainbow_top_decay=float(best.get("rainbow_top_decay", 0.0)),
     )
 
     print("\n📈 Backtest complet avec la meilleure config...")

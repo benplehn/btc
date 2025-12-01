@@ -41,6 +41,7 @@ class RainbowOnlyConfig:
     rainbow_buy_threshold: float = 0.25
     rainbow_sell_threshold: float = 0.75
     allocation_power: float = 1.0  # >1 = agressif sur les extrêmes
+    rainbow_top_decay: float = 0.0  # Décroissance annuelle de l'écart vers la bande haute
 
     max_allocation_pct: int = 100
     min_allocation_pct: int = 0
@@ -53,7 +54,7 @@ class RainbowOnlyConfig:
         return asdict(self)
 
 
-def calculate_rainbow_position(df: pd.DataFrame) -> pd.DataFrame:
+def calculate_rainbow_position(df: pd.DataFrame, top_decay: float = 0.0) -> pd.DataFrame:
     """
     Calcule la position du prix dans le Rainbow Chart
 
@@ -67,6 +68,7 @@ def calculate_rainbow_position(df: pd.DataFrame) -> pd.DataFrame:
 
     # Jours depuis genesis
     days_since_genesis = (d["date"] - genesis).dt.days.clip(lower=1).astype(float)
+    years_since_genesis = days_since_genesis / 365.25
 
     # Régression log-log: log(price) = a * log(days) + b
     x = np.log10(days_since_genesis)
@@ -95,7 +97,10 @@ def calculate_rainbow_position(df: pd.DataFrame) -> pd.DataFrame:
 
     # Bandes du Rainbow
     log_min = log_mid + min_dev
-    log_max = log_mid + max_dev
+
+    # Réduction progressive de l'écart vers la bande haute (décroissance exponentielle)
+    decay = np.exp(-float(top_decay) * years_since_genesis)
+    log_max = log_mid + max_dev * decay
 
     min_price = 10 ** log_min
     max_price = 10 ** log_max
@@ -206,7 +211,7 @@ def build_rainbow_only_signals(df: pd.DataFrame, cfg: RainbowOnlyConfig) -> pd.D
     if cfg.rainbow_buy_threshold >= cfg.rainbow_sell_threshold:
         raise ValueError("Le seuil d'achat doit être inférieur au seuil de vente pour le Rainbow.")
 
-    d = calculate_rainbow_position(df)
+    d = calculate_rainbow_position(df, top_decay=cfg.rainbow_top_decay)
     rainbow_pos = d["rainbow_position"].clip(0.0, 1.0)
 
     span = cfg.rainbow_sell_threshold - cfg.rainbow_buy_threshold
