@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -70,6 +71,12 @@ def parse_args():
         type=str,
         default="outputs/rainbow_only_equity.png",
         help="Fichier image pour le graphe stratégie vs B&H.",
+    )
+    p.add_argument(
+        "--plot-overview",
+        type=str,
+        default="outputs/rainbow_only_overview.png",
+        help="Figure avec prix BTC + bandes Rainbow, allocation, trades et comparaison vs B&H.",
     )
     p.add_argument(
         "--plot-allocation",
@@ -297,7 +304,7 @@ def main():
 
         plt.figure(figsize=(11, 6))
         plt.plot(d["date"], d["close"], color="#2ca02c", label="BTC")
-        plt.scatter(buys["date"], buys["close"], color="green", marker="^", label="Achat", alpha=0.8)
+        plt.scatter(buys["date"], buys["close"], color="black", marker="^", label="Achat", alpha=0.8)
         plt.scatter(sells["date"], sells["close"], color="red", marker="v", label="Vente", alpha=0.8)
         plt.yscale("log")
         plt.xlabel("Date")
@@ -308,6 +315,63 @@ def main():
         plt.tight_layout()
         plt.savefig(out_plot_trades, dpi=150)
         print(f"🖼️ Graphe trades sauvegardé -> {out_plot_trades}")
+
+    if args.plot_overview:
+        out_plot_overview = Path(args.plot_overview)
+        out_plot_overview.parent.mkdir(parents=True, exist_ok=True)
+
+        d = backtest["df"].copy()
+        buys = d[d["pos_change"] > 0.01]
+        sells = d[d["pos_change"] < -0.01]
+
+        fig, (ax_price, ax_alloc, ax_eq) = plt.subplots(3, 1, figsize=(12, 12), sharex=True)
+
+        # Subplot 1: Prix BTC + Rainbow + trades
+        cmap = plt.cm.rainbow
+        band_count = cfg.band_count
+        log_min = np.log10(d["rainbow_min"].clip(lower=1e-12))
+        log_max = np.log10(d["rainbow_max"].clip(lower=1e-12))
+        for i in range(band_count):
+            lower = np.power(10, log_min + (log_max - log_min) * (i / band_count))
+            upper = np.power(10, log_min + (log_max - log_min) * ((i + 1) / band_count))
+            ax_price.fill_between(
+                d["date"],
+                lower,
+                upper,
+                color=cmap(i / max(band_count - 1, 1)),
+                alpha=0.06,
+                edgecolor="none",
+            )
+        ax_price.plot(d["date"], d["close"], color="black", linewidth=1.4, label="BTC")
+        ax_price.scatter(buys["date"], buys["close"], color="black", marker="^", label="Achat", alpha=0.8, s=22)
+        ax_price.scatter(sells["date"], sells["close"], color="red", marker="v", label="Vente", alpha=0.8, s=22)
+        ax_price.set_yscale("log")
+        ax_price.set_ylabel("Prix BTC (log)")
+        ax_price.set_title("Prix + Rainbow + Trades")
+        ax_price.legend(loc="upper left")
+        ax_price.grid(alpha=0.3)
+
+        # Subplot 2: Allocation
+        ax_alloc.plot(d["date"], d["pos"], color="#1f77b4", label="Allocation (%)")
+        ax_alloc.set_ylabel("Allocation (%)")
+        ax_alloc.set_ylim(0, max(100, d["pos"].max() * 1.05))
+        ax_alloc.set_title("Allocation Rainbow")
+        ax_alloc.grid(alpha=0.3)
+
+        # Subplot 3: Equity vs B&H
+        eq_val = d["equity"] * args.initial_capital
+        bh_val = d["bh_equity"] * args.initial_capital
+        ax_eq.plot(d["date"], eq_val, label="Stratégie", color="#1f77b4")
+        ax_eq.plot(d["date"], bh_val, label="Buy & Hold", color="#ff7f0e", linestyle="--")
+        ax_eq.set_yscale("log")
+        ax_eq.set_ylabel("Valeur (€)")
+        ax_eq.set_title("Equity vs Buy & Hold")
+        ax_eq.legend(loc="upper left")
+        ax_eq.grid(alpha=0.3)
+
+        fig.tight_layout()
+        fig.savefig(out_plot_overview, dpi=150)
+        print(f"🖼️ Graphe overview sauvegardé -> {out_plot_overview}")
 
 
 if __name__ == "__main__":

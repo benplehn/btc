@@ -62,7 +62,15 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
     --power-min 0.8 --power-max 1.8 --power-step 0.2 \
     --max-alloc-min 75 --max-alloc-max 100 --max-alloc-step 25 \
     --min-alloc-min 0 --min-alloc-max 30 --min-alloc-step 10 \
-    --min-pos-change-min 2.5 --min-pos-change-max 15 --min-pos-change-step 2.5
+    --min-pos-change-min 2.5 --min-pos-change-max 15 --min-pos-change-step 2.5 \
+    --band-counts "8,10" \
+    --fees-bps 10 --initial-capital 100 \
+    --objective equity_ratio --turnover-penalty 0.0 \
+    --wf-folds 5 --wf-train-ratio 0.6 \
+    --plot outputs/rainbow_only_equity.png \
+    --plot-allocation outputs/rainbow_only_allocation.png \
+    --plot-trades outputs/rainbow_only_trades.png \
+    --plot-overview outputs/rainbow_only_overview.png
 ```
 
 ## Utilisation détaillée
@@ -100,14 +108,15 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
 - Sorties :
   - `outputs/rainbow_only_results.csv` classé par score décroissant.
   - Résumé console de la meilleure config (seuils d'achat/vente, allocations, exécution J+1) et backtest complet associé.
-  - Graphiques optionnels via `--plot` (equity vs B&H), `--plot-allocation` (allocation superposée au prix BTC) et `--plot-trades` (prix BTC avec marqueurs achats/ventes).
+  - Graphiques optionnels via `--plot` (equity vs B&H), `--plot-allocation` (allocation superposée au prix BTC), `--plot-trades` (prix BTC avec marqueurs achats en noir / ventes en rouge) et `--plot-overview` (vue synthétique prix + bandes Rainbow + trades + allocation + equity vs B&H).
 
 ## Visuels & métriques Rainbow
 - **Rainbow Chart v2** : `scripts/rainbow_chart_v2.py` génère `outputs/rainbow_v2.png`, avec la régression log et des bandes régulièrement espacées entre le quantile bas et le pic historique pour que la bande supérieure colle aux sommets.
 - **Graphiques de stratégie** : la CLI `scripts/check_data.py --plot ...` et le backtest affichent les courbes d'equity (stratégie vs buy & hold) ainsi que les positions dérivées des bandes Rainbow. L'optimiseur Rainbow-only peut aussi sauvegarder :
   - un graphe stratégie vs B&H via `--plot outputs/rainbow_only_equity.png` ;
   - un graphe allocation (%) superposé au prix BTC via `--plot-allocation outputs/rainbow_only_allocation.png` ;
-  - un graphe prix BTC avec marqueurs achats (verts) et ventes (rouges) via `--plot-trades outputs/rainbow_only_trades.png`.
+  - un graphe prix BTC avec marqueurs achats (noirs) et ventes (rouges) via `--plot-trades outputs/rainbow_only_trades.png` ;
+  - une vue synthétique combinant prix + rubans Rainbow + trades, allocation et equity vs B&H via `--plot-overview outputs/rainbow_only_overview.png`.
 - **Métriques disponibles** (issues de `src/fngbt/metrics.py` et du backtest) :
   - `EquityFinal` / `EquityFinalValue` (multiple et valeur en euros selon le capital initial)
   - `BHEquityFinal` / `BHEquityFinalValue` (buy & hold)
