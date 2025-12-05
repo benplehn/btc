@@ -10,6 +10,11 @@ Règle demandée:
 from __future__ import annotations
 
 import argparse
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
+
 from fngbt.lowest_window_weapon import (
     LowestWindowWeaponConfig,
     load_and_simulate,
