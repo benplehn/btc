@@ -18,7 +18,7 @@ DEF_START = "2013-01-01"
 
 def analyze_series(df: pd.DataFrame) -> dict:
     df = df.copy().dropna(subset=["date", "close"]).sort_values("date").reset_index(drop=True)
-    dates = pd.DatetimeIndex(pd.to_datetime(df["date"], utc=True).tz_localize(None))
+    dates = pd.DatetimeIndex(pd.to_datetime(df["date"], utc=True).dt.tz_localize(None))
     expected = pd.date_range(dates.min(), dates.max(), freq="D")
     missing = expected.difference(dates)
     duplicates = dates.duplicated().sum()

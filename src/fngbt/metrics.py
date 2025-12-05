@@ -7,7 +7,7 @@ def _max_dd(equity: pd.Series) -> float:
     dd = equity/peak - 1.0
     return float(dd.min())
 
-def compute_metrics(d: pd.DataFrame) -> dict:
+def compute_metrics(d: pd.DataFrame, initial_capital: float = 100.0) -> dict:
     eq = d["equity"]; bh = d["bh_equity"]
     n = max(len(d), 1)
     cagr = eq.iloc[-1]**(ANN/n) - 1
@@ -22,9 +22,13 @@ def compute_metrics(d: pd.DataFrame) -> dict:
     dvol = neg.std()*np.sqrt(ANN)
     sortino = mean/(dvol + 1e-12)
     calmar = (cagr)/(abs(mdd)+1e-12)
+    total_return = eq.iloc[-1] - 1.0
+    return_over_mdd = total_return / (abs(mdd) + 1e-12)
     return {
         "EquityFinal": float(eq.iloc[-1]),
+        "EquityFinalValue": float(eq.iloc[-1] * initial_capital),
         "BHEquityFinal": float(bh.iloc[-1]),
+        "BHEquityFinalValue": float(bh.iloc[-1] * initial_capital),
         "CAGR": float(cagr),
         "BHCAGR": float(bh_cagr),
         "Vol": float(vol),
@@ -34,5 +38,7 @@ def compute_metrics(d: pd.DataFrame) -> dict:
         "Sharpe": float(sharpe),
         "Sortino": float(sortino),
         "Calmar": float(calmar),
+        "ReturnOverMDD": float(return_over_mdd),
+        "Return": float(total_return),
         "Days": int(n),
     }

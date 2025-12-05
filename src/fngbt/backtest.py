@@ -8,13 +8,14 @@ import numpy as np
 from .metrics import compute_metrics
 
 
-def run_backtest(df: pd.DataFrame, fees_bps: float = 10.0) -> dict:
+def run_backtest(df: pd.DataFrame, fees_bps: float = 10.0, initial_capital: float = 100.0) -> dict:
     """
     Backtest long-only avec allocation variable
 
     Args:
         df: DataFrame avec colonnes 'close', 'pos' (allocation en %)
         fees_bps: Frais de transaction en basis points (10 bps = 0.1%)
+        initial_capital: Capital de départ (utilisé pour les métriques en valeur)
 
     Returns:
         dict avec 'df' (résultats jour par jour) et 'metrics' (métriques de performance)
@@ -46,7 +47,7 @@ def run_backtest(df: pd.DataFrame, fees_bps: float = 10.0) -> dict:
     d["trade"] = (turnover > 1e-6).astype(int)
 
     # Calcul des métriques de performance
-    metrics = compute_metrics(d)
+    metrics = compute_metrics(d, initial_capital=initial_capital)
     metrics["trades"] = int(d["trade"].sum())
     metrics["turnover_total"] = float(turnover.sum())
     metrics["avg_allocation"] = float(weight.mean() * 100)

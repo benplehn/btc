@@ -31,11 +31,13 @@ def build_rainbow_v2(px: pd.DataFrame, extend_to: str | None = None) -> pd.DataF
         raise ValueError("Aucune donnée BTC pour construire le Rainbow Chart.")
 
     slope, intercept = _log_regression(df["date"], df["close"])
-    quantiles = [0.02, 0.10, 0.20, 0.35, 0.50, 0.65, 0.80, 0.90, 0.98]
+    quantiles = [0.02, 0.10, 0.20, 0.35, 0.50, 0.65, 0.80, 0.90, 1.00]
     deviation = np.log10(df["close"].clip(lower=1e-12)) - (
         intercept + slope * np.log10((df["date"] - GENESIS).dt.days.clip(lower=1).astype(float))
     )
-    band_devs = np.quantile(deviation, quantiles)
+    min_dev = np.quantile(deviation, quantiles[0])
+    max_dev = float(deviation.max())
+    band_devs = np.linspace(min_dev, max_dev, len(quantiles))
 
     def _lines(dates: Iterable[pd.Timestamp]) -> pd.DataFrame:
         dates = pd.to_datetime(pd.Index(dates)).sort_values()
