@@ -119,6 +119,16 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
   - un graphe allocation (%) superposé au prix BTC via `--plot-allocation outputs/rainbow_only_allocation.png` ;
   - un graphe prix BTC avec marqueurs achats (noirs) et ventes (rouges) via `--plot-trades outputs/rainbow_only_trades.png` ;
   - une vue synthétique combinant prix + rubans Rainbow + trades, allocation et equity vs B&H via `--plot-overview outputs/rainbow_only_overview.png`.
+
+### `scripts/rainbow_bottom_lumpsum.py`
+- Objet : simuler des achats lump-sum de 50 € déclenchés par les retours dans le dernier ruban (bande 0) après y avoir passé au moins une semaine.
+- Règle : dès qu'un séjour dans le ruban 0 dure `--min-days` jours ou plus, le prochain retour dans ce ruban (après être remonté) déclenche un achat unique de `--amount` euros. On répète sur tout l'historique et on compare à un buy & hold qui investit le même capital dès le départ.
+- Options principales :
+  - `--start YYYY-MM-DD` / `--end YYYY-MM-DD` pour restreindre la période ;
+  - `--amount` (défaut 50) pour fixer le ticket d'achat ;
+  - `--min-days` (défaut 7) pour exiger un séjour minimum dans le ruban 0 avant de considérer le retour suivant ;
+  - `--bands` (défaut 8) et `--top-decay` (décroissance de la bande haute) pour aligner la quantisation sur le Rainbow actuel.
+- Sorties : récap console (nombre de signaux, capital investi, multiple final vs B&H, max drawdown) et CSV détaillé dans `outputs/rainbow_bottom_lumpsum.csv`.
 - **Métriques disponibles** (issues de `src/fngbt/metrics.py` et du backtest) :
   - `EquityFinal` / `EquityFinalValue` (multiple et valeur en euros selon le capital initial)
   - `BHEquityFinal` / `BHEquityFinalValue` (buy & hold)
