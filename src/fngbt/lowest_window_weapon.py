@@ -21,7 +21,7 @@ from fngbt.strategy import calculate_rainbow_position, _quantize_bands
 @dataclass
 class LowestWindowWeaponConfig:
     amount: float = 50.0
-    min_days_in_band: int = 7
+    min_days_in_band: int = 1
     band_count: int = 8
     rainbow_top_decay: float = 0.0
 
@@ -82,19 +82,14 @@ def simulate_lowest_window_weapon(df: pd.DataFrame, cfg: LowestWindowWeaponConfi
     d["equity"] = d["btc_holdings"] * d["close"]
 
     total_invested = d["invested_eur"].iloc[-1]
-    if total_invested > 0:
-        first_price = d["close"].iloc[0]
-        bh_btc = total_invested / first_price
-        d["bh_equity"] = bh_btc * d["close"]
-    else:
-        d["bh_equity"] = 0.0
+    d["dca_equity"] = _dca_monthly_equity(d, total_invested)
     return d
 
 
 def summarize(d: pd.DataFrame) -> dict:
     total_invested = float(d["invested_eur"].iloc[-1])
     eq = float(d["equity"].iloc[-1])
-    bh_eq = float(d["bh_equity"].iloc[-1])
+    dca_eq = float(d["dca_equity"].iloc[-1])
     nb_signals = int((d["contribution"] > 0).sum())
     mdd = _max_drawdown(d["equity"])
     return {
@@ -102,8 +97,8 @@ def summarize(d: pd.DataFrame) -> dict:
         "total_invested": total_invested,
         "final_value": eq,
         "multiple": (eq / total_invested) if total_invested > 0 else 0.0,
-        "bh_final": bh_eq,
-        "bh_multiple": (bh_eq / total_invested) if total_invested > 0 else 0.0,
+        "dca_final": dca_eq,
+        "dca_multiple": (dca_eq / total_invested) if total_invested > 0 else 0.0,
         "max_dd": mdd,
     }
 
@@ -112,6 +107,30 @@ def _max_drawdown(equity: pd.Series) -> float:
     peak = equity.cummax().replace(0, pd.NA).ffill().fillna(1.0)
     dd = equity / peak - 1.0
     return float(dd.min())
+
+
+def _dca_monthly_equity(d: pd.DataFrame, total_invested: float) -> pd.Series:
+    """Calcule l'équity d'un DCA mensuel répliquant le capital total investi."""
+
+    if total_invested <= 0:
+        return pd.Series(0.0, index=d.index)
+
+    dates = pd.to_datetime(d["date"])
+    months = pd.date_range(dates.iloc[0].normalize(), dates.iloc[-1].normalize(), freq="MS")
+    if len(months) == 0:
+        return pd.Series(0.0, index=d.index)
+
+    monthly_amt = total_invested / len(months)
+    contrib = pd.Series(0.0, index=d.index)
+    date_values = dates.values
+    for m in months:
+        pos = date_values.searchsorted(np.datetime64(m), side="left")
+        if pos < len(contrib):
+            contrib.iloc[pos] += monthly_amt
+
+    btc_bought = contrib / d["close"]
+    holdings = btc_bought.cumsum()
+    return holdings * d["close"]
 
 
 def load_and_simulate(
@@ -162,9 +181,9 @@ def plot_price_with_signals(sim: pd.DataFrame, cfg: LowestWindowWeaponConfig, ou
 def plot_equity(sim: pd.DataFrame, out: str | Path | None = None) -> None:
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(sim["date"], sim["equity"], label="Stratégie", color="#18a957")
-    ax.plot(sim["date"], sim["bh_equity"], label="Buy & Hold", color="#555")
+    ax.plot(sim["date"], sim["dca_equity"], label="DCA mensuel équivalent", color="#555")
     ax.set_ylabel("€")
-    ax.set_title("Equity: LowestWindowWeapon vs Buy & Hold")
+    ax.set_title("Equity: LowestWindowWeapon vs DCA")
     ax.legend(loc="upper left")
     fig.tight_layout()
     out_path = _ensure_out_path(out)
@@ -199,7 +218,7 @@ def plot_overview(sim: pd.DataFrame, cfg: LowestWindowWeaponConfig, out: str | P
     # Equity
     ax_eq = axes[1]
     ax_eq.plot(sim["date"], sim["equity"], label="Stratégie", color="#18a957")
-    ax_eq.plot(sim["date"], sim["bh_equity"], label="Buy & Hold", color="#555")
+    ax_eq.plot(sim["date"], sim["dca_equity"], label="DCA mensuel équivalent", color="#555")
     ax_eq.set_ylabel("€")
     ax_eq.set_title("Equity cumulée")
     ax_eq.legend(loc="upper left")

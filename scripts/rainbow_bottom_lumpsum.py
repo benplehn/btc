@@ -5,7 +5,8 @@ Règle demandée:
   dernier ruban (bande la plus basse du Rainbow Chart).
 - Après un épisode éligible et une sortie du ruban, le prochain retour dans le
   ruban déclenche un achat lump-sum fixe (`amount`).
-- On répète cela sur tout l'historique et on compare au buy & hold (B&H).
+- On répète cela sur tout l'historique et on compare à un DCA mensuel qui
+  répartit le même capital total sur la période.
 """
 from __future__ import annotations
 
@@ -23,10 +24,10 @@ from fngbt.lowest_window_weapon import (
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Lump-sum sur le dernier ruban Rainbow")
-    p.add_argument("--start", type=str, default="2013-01-01", help="Date de début (YYYY-MM-DD)")
+    p.add_argument("--start", type=str, default="2018-01-01", help="Date de début (YYYY-MM-DD)")
     p.add_argument("--end", type=str, default=None, help="Date de fin (YYYY-MM-DD)")
     p.add_argument("--amount", type=float, default=50.0, help="Montant investi à chaque signal")
-    p.add_argument("--min-days", type=int, default=7, help="Durée minimale dans le dernier ruban pour qualifier un retour")
+    p.add_argument("--min-days", type=int, default=1, help="Durée minimale dans le dernier ruban pour qualifier un retour")
     p.add_argument("--bands", type=int, default=8, help="Nombre de rubans pour la quantisation")
     p.add_argument("--top-decay", type=float, default=0.0, help="Décroissance annuelle appliquée à la bande haute")
     p.add_argument(
@@ -44,7 +45,7 @@ def parse_args() -> argparse.Namespace:
         "--plot-equity",
         type=str,
         default="outputs/rainbow_bottom_lumpsum_equity.png",
-        help="Chemin du graphe equity (stratégie vs B&H)",
+        help="Chemin du graphe equity (stratégie vs DCA)",
     )
     p.add_argument(
         "--plot-overview",
@@ -78,7 +79,10 @@ def main() -> None:
     print(f"Nombre de signaux: {stats['signals']}")
     print(f"Capital investi: {stats['total_invested']:.2f} €")
     print(f"Valeur finale stratégie: {stats['final_value']:.2f} € (x{stats['multiple']:.2f})")
-    print(f"Buy & Hold (même capital investi au début): {stats['bh_final']:.2f} € (x{stats['bh_multiple']:.2f})")
+    print(
+        "DCA mensuel (même capital total, lissé sur la période): "
+        f"{stats['dca_final']:.2f} € (x{stats['dca_multiple']:.2f})"
+    )
     print(f"Max Drawdown de la stratégie: {stats['max_dd']*100:.2f}%")
 
     # Sauvegarde rapide pour inspection si besoin
@@ -93,7 +97,7 @@ def main() -> None:
         plot_overview(sim, cfg, args.plot_overview)
         print("Graphiques sauvegardés :")
         print(f"- Prix + rubans + achats : {args.plot_price}")
-        print(f"- Equity stratégie vs B&H : {args.plot_equity}")
+        print(f"- Equity stratégie vs DCA : {args.plot_equity}")
         print(f"- Vue combinée : {args.plot_overview}")
 
 

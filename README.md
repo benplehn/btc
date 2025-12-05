@@ -121,26 +121,26 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
   - une vue synthétique combinant prix + rubans Rainbow + trades, allocation et equity vs B&H via `--plot-overview outputs/rainbow_only_overview.png`.
 
 ### `scripts/rainbow_bottom_lumpsum.py`
-- Objet : simuler des achats lump-sum de 50 € déclenchés par les retours dans le dernier ruban (bande 0) après y avoir passé au moins une semaine.
-- Règle : dès qu'un séjour dans le ruban 0 dure `--min-days` jours ou plus, le prochain retour dans ce ruban (après être remonté) déclenche un achat unique de `--amount` euros. On répète sur tout l'historique et on compare à un buy & hold qui investit le même capital dès le départ.
+- Objet : simuler des achats lump-sum de 50 € déclenchés par les retours dans le dernier ruban (bande 0).
+- Règle : dès qu'un séjour dans le ruban 0 dure `--min-days` jours ou plus (défaut 1 jour), le prochain retour dans ce ruban après en être sorti déclenche un achat unique de `--amount` euros. On répète sur tout l'historique (défaut à partir du 01/01/2018) et on compare à un DCA mensuel qui investit le même capital total réparti linéairement dans le temps.
 - Options principales :
-  - `--start YYYY-MM-DD` / `--end YYYY-MM-DD` pour restreindre la période ;
+  - `--start YYYY-MM-DD` / `--end YYYY-MM-DD` pour restreindre la période (défaut `2018-01-01`) ;
   - `--amount` (défaut 50) pour fixer le ticket d'achat ;
-  - `--min-days` (défaut 7) pour exiger un séjour minimum dans le ruban 0 avant de considérer le retour suivant ;
+  - `--min-days` (défaut 1) pour exiger un séjour minimum dans le ruban 0 avant de considérer le retour suivant ;
   - `--bands` (défaut 8) et `--top-decay` (décroissance de la bande haute) pour aligner la quantisation sur le Rainbow actuel.
 - Sorties :
-  - récap console (nombre de signaux, capital investi, multiple final vs B&H, max drawdown) ;
+  - récap console (nombre de signaux, capital investi, multiple final vs DCA, max drawdown) ;
   - CSV détaillé dans `outputs/rainbow_bottom_lumpsum.csv` ;
   - graphiques automatiques (désactivables via `--no-plots`) :
     - prix BTC en log + rubans + marqueurs d'achats (`--plot-price`, défaut `outputs/rainbow_bottom_lumpsum_price.png`) ;
-    - equity stratégie vs B&H (`--plot-equity`, défaut `outputs/rainbow_bottom_lumpsum_equity.png`) ;
+    - equity stratégie vs DCA (`--plot-equity`, défaut `outputs/rainbow_bottom_lumpsum_equity.png`) ;
     - vue combinée prix + rubans + achats + equity (`--plot-overview`, défaut `outputs/rainbow_bottom_lumpsum_overview.png`).
 
 ### `scripts/lowest_window_weapon.py`
 - Objet : simuler exclusivement le facteur **LowestWindowWeapon** (retours dans le ruban 0 après un séjour long) sans mélanger d'autres signaux.
 - Règle : identique au script précédent mais mise en avant comme facteur unique, avec export CSV configurable via `--out` (par défaut `outputs/lowest_window_weapon.csv`).
-- Options : `--start`, `--end`, `--amount`, `--min-days`, `--bands`, `--top-decay`, `--out` plus les mêmes flags de graphes que `rainbow_bottom_lumpsum.py` (`--plot-price`, `--plot-equity`, `--plot-overview`, `--no-plots`).
-- Sorties : résumé console (nombre d'achats, capital total investi, multiple final vs B&H, max drawdown), CSV détaillant chaque contribution, et graphes automatiques équivalents (prix + rubans + achats, equity vs B&H, overview).
+- Options : `--start` (défaut `2018-01-01`), `--end`, `--amount` (défaut 50), `--min-days` (défaut 1), `--bands`, `--top-decay`, `--out` plus les mêmes flags de graphes que `rainbow_bottom_lumpsum.py` (`--plot-price`, `--plot-equity`, `--plot-overview`, `--no-plots`).
+- Sorties : résumé console (nombre d'achats, capital total investi, multiple final vs DCA, max drawdown), CSV détaillant chaque contribution, et graphes automatiques équivalents (prix + rubans + achats, equity vs DCA, overview).
 - **Métriques disponibles** (issues de `src/fngbt/metrics.py` et du backtest) :
   - `EquityFinal` / `EquityFinalValue` (multiple et valeur en euros selon le capital initial)
   - `BHEquityFinal` / `BHEquityFinalValue` (buy & hold)

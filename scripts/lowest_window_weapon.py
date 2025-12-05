@@ -22,13 +22,13 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Simule uniquement le facteur LowestWindowWeapon (ruban 0)."
     )
-    p.add_argument("--start", type=str, default="2013-01-01", help="Date de début (YYYY-MM-DD)")
+    p.add_argument("--start", type=str, default="2018-01-01", help="Date de début (YYYY-MM-DD)")
     p.add_argument("--end", type=str, default=None, help="Date de fin (YYYY-MM-DD)")
     p.add_argument("--amount", type=float, default=50.0, help="Montant investi à chaque entrée qualifiée")
     p.add_argument(
         "--min-days",
         type=int,
-        default=7,
+        default=1,
         help="Séjour minimal dans le ruban 0 avant qu'un retour déclenche un achat",
     )
     p.add_argument("--bands", type=int, default=8, help="Nombre de rubans pour la quantisation")
@@ -49,7 +49,7 @@ def parse_args() -> argparse.Namespace:
         "--plot-equity",
         type=str,
         default="outputs/lowest_window_weapon_equity.png",
-        help="Chemin du graphe equity (stratégie vs B&H)",
+        help="Chemin du graphe equity (stratégie vs DCA)",
     )
     p.add_argument(
         "--plot-overview",
@@ -87,8 +87,8 @@ def main() -> None:
     print(f"Capital investi: {stats['total_invested']:.2f} €")
     print(f"Valeur finale stratégie: {stats['final_value']:.2f} € (x{stats['multiple']:.2f})")
     print(
-        "Buy & Hold (capital investi d'un coup au début): "
-        f"{stats['bh_final']:.2f} € (x{stats['bh_multiple']:.2f})"
+        "DCA mensuel (même capital total, lissé sur la période): "
+        f"{stats['dca_final']:.2f} € (x{stats['dca_multiple']:.2f})"
     )
     print(f"Max Drawdown de la stratégie: {stats['max_dd']*100:.2f}%")
 
@@ -103,7 +103,7 @@ def main() -> None:
         plot_overview(sim, cfg, args.plot_overview)
         print("Graphiques sauvegardés :")
         print(f"- Prix + rubans + achats : {args.plot_price}")
-        print(f"- Equity stratégie vs B&H : {args.plot_equity}")
+        print(f"- Equity stratégie vs DCA : {args.plot_equity}")
         print(f"- Vue combinée : {args.plot_overview}")
 
 
