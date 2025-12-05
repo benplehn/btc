@@ -129,6 +129,12 @@ PYTHONPATH=src python scripts/rainbow_only_optimize.py --search grid \
   - `--min-days` (défaut 7) pour exiger un séjour minimum dans le ruban 0 avant de considérer le retour suivant ;
   - `--bands` (défaut 8) et `--top-decay` (décroissance de la bande haute) pour aligner la quantisation sur le Rainbow actuel.
 - Sorties : récap console (nombre de signaux, capital investi, multiple final vs B&H, max drawdown) et CSV détaillé dans `outputs/rainbow_bottom_lumpsum.csv`.
+
+### `scripts/lowest_window_weapon.py`
+- Objet : simuler exclusivement le facteur **LowestWindowWeapon** (retours dans le ruban 0 après un séjour long) sans mélanger d'autres signaux.
+- Règle : identique au script précédent mais mise en avant comme facteur unique, avec export CSV configurable via `--out` (par défaut `outputs/lowest_window_weapon.csv`).
+- Options : `--start`, `--end`, `--amount`, `--min-days`, `--bands`, `--top-decay`, `--out`.
+- Sorties : résumé console (nombre d'achats, capital total investi, multiple final vs B&H, max drawdown) et CSV détaillant chaque contribution.
 - **Métriques disponibles** (issues de `src/fngbt/metrics.py` et du backtest) :
   - `EquityFinal` / `EquityFinalValue` (multiple et valeur en euros selon le capital initial)
   - `BHEquityFinal` / `BHEquityFinalValue` (buy & hold)
