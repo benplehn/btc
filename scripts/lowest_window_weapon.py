@@ -34,6 +34,29 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--bands", type=int, default=8, help="Nombre de rubans pour la quantisation")
     p.add_argument("--top-decay", type=float, default=0.0, help="Décroissance annuelle appliquée à la bande haute")
     p.add_argument("--out", type=str, default="outputs/lowest_window_weapon.csv", help="Chemin du CSV de sortie")
+    p.add_argument(
+        "--no-plots",
+        action="store_true",
+        help="Désactive l'enregistrement des graphiques (prix/trades, equity, overview)",
+    )
+    p.add_argument(
+        "--plot-price",
+        type=str,
+        default="outputs/lowest_window_weapon_price.png",
+        help="Chemin du graphe prix + rubans + achats",
+    )
+    p.add_argument(
+        "--plot-equity",
+        type=str,
+        default="outputs/lowest_window_weapon_equity.png",
+        help="Chemin du graphe equity (stratégie vs B&H)",
+    )
+    p.add_argument(
+        "--plot-overview",
+        type=str,
+        default="outputs/lowest_window_weapon_overview.png",
+        help="Chemin du graphe combiné prix + achats + equity",
+    )
     return p.parse_args()
 
 
@@ -71,6 +94,17 @@ def main() -> None:
 
     sim.to_csv(args.out, index=False)
     print(f"Résultats détaillés exportés vers {args.out}")
+
+    if not args.no_plots:
+        from fngbt.lowest_window_weapon import plot_equity, plot_overview, plot_price_with_signals
+
+        plot_price_with_signals(sim, cfg, args.plot_price)
+        plot_equity(sim, args.plot_equity)
+        plot_overview(sim, cfg, args.plot_overview)
+        print("Graphiques sauvegardés :")
+        print(f"- Prix + rubans + achats : {args.plot_price}")
+        print(f"- Equity stratégie vs B&H : {args.plot_equity}")
+        print(f"- Vue combinée : {args.plot_overview}")
 
 
 if __name__ == "__main__":
