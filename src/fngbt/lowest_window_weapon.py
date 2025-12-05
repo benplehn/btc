@@ -24,6 +24,8 @@ class LowestWindowWeaponConfig:
     min_days_in_band: int = 1
     band_count: int = 8
     rainbow_top_decay: float = 0.0
+    sell_penultimate_frac: float = 0.25
+    sell_top_frac: float = 0.50
 
 
 def _compute_band_lines(rainbow_min: pd.Series, rainbow_max: pd.Series, band_count: int) -> list[pd.Series]:
@@ -62,7 +64,7 @@ def find_bottom_band_entries(df: pd.DataFrame, cfg: LowestWindowWeaponConfig) ->
 
 
 def simulate_lowest_window_weapon(df: pd.DataFrame, cfg: LowestWindowWeaponConfig) -> pd.DataFrame:
-    entries = find_bottom_band_entries(df, cfg)
+    entries = set(find_bottom_band_entries(df, cfg))
 
     rainbow = calculate_rainbow_position(df, top_decay=cfg.rainbow_top_decay)
     band_ids, _ = _quantize_bands(rainbow["rainbow_position"], cfg.band_count)
@@ -73,15 +75,83 @@ def simulate_lowest_window_weapon(df: pd.DataFrame, cfg: LowestWindowWeaponConfi
         rainbow[f"rainbow_band_{i}"] = line
 
     d = rainbow.reset_index(drop=True)
-    d["contribution"] = 0.0
-    d.loc[entries, "contribution"] = cfg.amount
 
-    d["btc_bought"] = d["contribution"] / d["close"]
-    d["btc_holdings"] = d["btc_bought"].cumsum()
-    d["invested_eur"] = d["contribution"].cumsum()
-    d["equity"] = d["btc_holdings"] * d["close"]
+    # Containers for iterative simulation
+    contribution = np.zeros(len(d))
+    reinvest = np.zeros(len(d))
+    sells = np.zeros(len(d))
+    sells_top = np.zeros(len(d))
+    holdings = np.zeros(len(d))
+    invested_eur = np.zeros(len(d))
+    cash_from_penultimate = 0.0
+    cash_from_top = 0.0
+    cash_penultimate_series = np.zeros(len(d))
+    cash_top_series = np.zeros(len(d))
+    btc = 0.0
+    total_invested = 0.0
+    prev_band: int | None = None
 
-    total_invested = d["invested_eur"].iloc[-1]
+    top_band = cfg.band_count - 1
+    penultimate_band = cfg.band_count - 2
+    bottom_band = 0
+    bottom_penultimate_band = 1
+
+    for i, row in d.iterrows():
+        band = int(row["rainbow_band"])
+        price = float(row["close"])
+
+        # Selling when entering the upper bands
+        if prev_band != band and band == penultimate_band and btc > 0:
+            sell_btc = btc * cfg.sell_penultimate_frac
+            if sell_btc > 0:
+                btc -= sell_btc
+                eur = sell_btc * price
+                cash_from_penultimate += eur
+                sells[i] = eur
+        if prev_band != band and band == top_band and btc > 0:
+            sell_btc = btc * cfg.sell_top_frac
+            if sell_btc > 0:
+                btc -= sell_btc
+                eur = sell_btc * price
+                cash_from_top += eur
+                sells_top[i] = eur
+
+        # Reinvest when entering the lower bands
+        if prev_band != band and band == bottom_penultimate_band and cash_from_penultimate > 0:
+            reinvest[i] += cash_from_penultimate
+            btc += cash_from_penultimate / price
+            cash_from_penultimate = 0.0
+        if prev_band != band and band == bottom_band and cash_from_top > 0:
+            reinvest[i] += cash_from_top
+            btc += cash_from_top / price
+            cash_from_top = 0.0
+
+        # Lump-sum entries
+        if i in entries:
+            contribution[i] = cfg.amount
+            total_invested += cfg.amount
+            invested_eur[i] = total_invested
+            btc += cfg.amount / price
+        else:
+            invested_eur[i] = total_invested
+
+        holdings[i] = btc
+        cash_penultimate_series[i] = cash_from_penultimate
+        cash_top_series[i] = cash_from_top
+        prev_band = band
+
+    d["contribution"] = contribution
+    d["reinvest"] = reinvest
+    d["sell_penultimate"] = sells
+    d["sell_top"] = sells_top
+    d["btc_holdings"] = holdings
+    d["invested_eur"] = invested_eur
+    d["cash_reserve_penultimate"] = cash_penultimate_series
+    d["cash_reserve_top"] = cash_top_series
+    d["cash_reserve"] = cash_penultimate_series + cash_top_series
+    d["equity"] = d["btc_holdings"] * d["close"] + d["cash_reserve"]
+
+    total_invested = invested_eur[-1]
     d["dca_equity"] = _dca_monthly_equity(d, total_invested)
     return d
 
@@ -166,7 +236,13 @@ def plot_price_with_signals(sim: pd.DataFrame, cfg: LowestWindowWeaponConfig, ou
     ax.plot(sim["date"], sim["close"], color="#111", label="BTC-USD")
     buys = sim[sim["contribution"] > 0]
     if not buys.empty:
-        ax.scatter(buys["date"], buys["close"], color="black", marker="^", s=35, label="Achats")
+        ax.scatter(buys["date"], buys["close"], color="black", marker="^", s=35, label="Lump-sum €50")
+    reinv = sim[sim["reinvest"] > 0]
+    if not reinv.empty:
+        ax.scatter(reinv["date"], reinv["close"], color="#555", marker="^", s=35, label="Réinvestissements haut → bas")
+    sells = sim[(sim["sell_penultimate"] > 0) | (sim["sell_top"] > 0)]
+    if not sells.empty:
+        ax.scatter(sells["date"], sells["close"], color="#c43b3b", marker="v", s=35, label="Ventes bandes hautes")
     ax.set_yscale("log")
     ax.set_ylabel("BTC (log)")
     ax.set_title("BTC + retours dans le ruban bas (achats €50)")
@@ -193,7 +269,7 @@ def plot_equity(sim: pd.DataFrame, out: str | Path | None = None) -> None:
 
 
 def plot_overview(sim: pd.DataFrame, cfg: LowestWindowWeaponConfig, out: str | Path | None = None) -> None:
-    """Vue combinée : prix + rubans + achats et equity vs B&H."""
+    """Vue combinée : prix + rubans + achats/ventes et equity vs DCA."""
     fig, axes = plt.subplots(2, 1, figsize=(11, 9), sharex=True)
 
     # Prix + rubans + achats
@@ -209,7 +285,13 @@ def plot_overview(sim: pd.DataFrame, cfg: LowestWindowWeaponConfig, out: str | P
     ax_price.plot(sim["date"], sim["close"], color="#111", label="BTC-USD")
     buys = sim[sim["contribution"] > 0]
     if not buys.empty:
-        ax_price.scatter(buys["date"], buys["close"], color="black", marker="^", s=35, label="Achats")
+        ax_price.scatter(buys["date"], buys["close"], color="black", marker="^", s=35, label="Lump-sum €50")
+    reinv = sim[sim["reinvest"] > 0]
+    if not reinv.empty:
+        ax_price.scatter(reinv["date"], reinv["close"], color="#555", marker="^", s=35, label="Réinvestissements haut → bas")
+    sells = sim[(sim["sell_penultimate"] > 0) | (sim["sell_top"] > 0)]
+    if not sells.empty:
+        ax_price.scatter(sells["date"], sells["close"], color="#c43b3b", marker="v", s=35, label="Ventes bandes hautes")
     ax_price.set_yscale("log")
     ax_price.set_ylabel("BTC (log)")
     ax_price.legend(loc="upper left")
