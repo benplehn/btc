@@ -85,6 +85,8 @@ def simulate_lowest_window_weapon(df: pd.DataFrame, cfg: LowestWindowWeaponConfi
     invested_eur = np.zeros(len(d))
     cash_from_penultimate = 0.0
     cash_from_top = 0.0
+    sold_penultimate = False
+    sold_top = False
     cash_penultimate_series = np.zeros(len(d))
     cash_top_series = np.zeros(len(d))
     btc = 0.0
@@ -101,30 +103,34 @@ def simulate_lowest_window_weapon(df: pd.DataFrame, cfg: LowestWindowWeaponConfi
         price = float(row["close"])
 
         # Selling when entering the upper bands
-        if prev_band != band and band == penultimate_band and btc > 0:
+        if prev_band != band and band == penultimate_band and btc > 0 and not sold_penultimate:
             sell_btc = btc * cfg.sell_penultimate_frac
             if sell_btc > 0:
                 btc -= sell_btc
                 eur = sell_btc * price
                 cash_from_penultimate += eur
                 sells[i] = eur
-        if prev_band != band and band == top_band and btc > 0:
+                sold_penultimate = True
+        if prev_band != band and band == top_band and btc > 0 and not sold_top:
             sell_btc = btc * cfg.sell_top_frac
             if sell_btc > 0:
                 btc -= sell_btc
                 eur = sell_btc * price
                 cash_from_top += eur
                 sells_top[i] = eur
+                sold_top = True
 
         # Reinvest when entering the lower bands
         if prev_band != band and band == bottom_penultimate_band and cash_from_penultimate > 0:
             reinvest[i] += cash_from_penultimate
             btc += cash_from_penultimate / price
             cash_from_penultimate = 0.0
+            sold_penultimate = False
         if prev_band != band and band == bottom_band and cash_from_top > 0:
             reinvest[i] += cash_from_top
             btc += cash_from_top / price
             cash_from_top = 0.0
+            sold_top = False
 
         # Lump-sum entries
         if i in entries:
